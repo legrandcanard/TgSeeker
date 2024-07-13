@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>ce15dc75-9da6-42bc-b47c-b736ef072627</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tdlib\**" />
+    <Content Remove="tdlib\**" />
+    <EmbeddedResource Remove="tdlib\**" />
+    <None Remove="tdlib\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Client\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TgSeeker.Persistent.Sqlite\TgSeeker.Persistent.Sqlite.csproj" />
+    <ProjectReference Include="..\TgSeeker\TgSeeker.csproj" />
+  </ItemGroup>
+
+</Project>
