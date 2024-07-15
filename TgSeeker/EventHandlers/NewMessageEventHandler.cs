@@ -41,9 +41,26 @@ namespace TgSeeker.EventHandlers
                     Text = textMessage.Text.Text
                 });
             }
-            else
+            else if (message.Content is MessageContent.MessageVoiceNote voiceNoteMessage) 
             {
-                // Implement other message types
+                try
+                {
+                    var file = await Client.DownloadFileAsync(voiceNoteMessage.VoiceNote.Voice.Id, priority: 3, limit: int.MaxValue, synchronous: true);
+                    var msg = await Client.SendMessageAsync(options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
+                    {
+                        Waveform = voiceNoteMessage.VoiceNote.Waveform,
+                        Caption = voiceNoteMessage.Caption,
+                        Duration = voiceNoteMessage.VoiceNote.Duration,
+                        Extra = voiceNoteMessage.VoiceNote.Extra,
+                        VoiceNote = new InputFile.InputFileRemote
+                        {
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                }
+                    // Implement other message types
             }
         }
     }
