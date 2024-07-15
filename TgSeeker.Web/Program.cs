@@ -46,7 +46,7 @@ namespace TgSeeker.Web
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
+            
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
@@ -57,7 +57,7 @@ namespace TgSeeker.Web
             app.UseAuthorization();
 
             app.MapControllers();
-            app.MapRazorPages();
+            app.MapFallbackToFile("index.html");
 
             app.Run();
         }

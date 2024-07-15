@@ -1,7 +1,6 @@
 <template>  
 <div class="main-panel">
-	<h2>TgSeeker</h2>
-
+	<img :src="iconUrl" />
 	<div>
 		<span v-if="serviceState == 1" class="badge text-bg-success app-status">
 			<div class="spinner-grow text-light loading-small" role="status">
@@ -19,14 +18,21 @@
 	</div>
 
 	<div v-if="user" class="credentials text-start">
-		<div>
-			Id: <span class="badge text-bg-primary">{{ user.id }}</span>
+		<div v-if="user.firstName || user.lastName" class="property">
+			<div>{{ user.firstName }} {{ user.lastName }}</div>
+			<div class="text-secondary">Full name</div>
 		</div>
-		<div v-if="user.firstName || user.lastName">
-			Name: {{ user.firstName }} {{ user.lastName }}
+		<div v-if="user.usernames.editableUsername" class="property">
+			<div>@{{ user.usernames.editableUsername }}</div>
+			<div class="text-secondary">Username</div>
 		</div>
-		<div v-if="user.usernames.editableUsername">
-			Username: <a :href="'https://t.me/' + user.usernames.editableUsername">@{{ user.usernames.editableUsername }}</a>
+		<div class="property">
+			<div>{{ user.phoneNumber }}</div>
+			<div class="text-secondary">Phone</div>
+		</div>
+		<div class="property">
+			<div>{{ user.id }}</div>
+			<div class="text-secondary">User id</div>
 		</div>
 	</div>
 	<div v-else>
@@ -61,7 +67,8 @@ export default {
 		return {
 			user: null,
 			serviceState: null,
-			isServerStateChangeRequestPending: { state: false }
+			isServerStateChangeRequestPending: { state: false },
+			iconUrl: new URL('@/assets/tgs_logo.png', import.meta.url).href
 		}
 	},
 	async mounted() {
@@ -100,7 +107,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .main-panel {
 	position: relative;
 }
@@ -109,5 +116,12 @@ export default {
 .loading-small {
 	width: 12px;
     height: 12px;
+}
+.credentials {
+
+	.property {
+		line-height: 1;
+		margin-top: 7px;
+	}
 }
 </style>

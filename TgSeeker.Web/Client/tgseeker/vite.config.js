@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
     plugins: [vue()],
     build: {
-        outDir: '../../wwwroot/dist',
+        outDir: '../../wwwroot/',
         emptyOutDir: true, // also necessary
         rollupOptions: {
             output: {
@@ -14,5 +14,8 @@ export default defineConfig({
                 assetFileNames: `assets/[name].[ext]`
             }
         },
-    }
+    },
+    resolve: {
+        alias: [{ find: '@', replacement: '/src' }],
+    },
 })
