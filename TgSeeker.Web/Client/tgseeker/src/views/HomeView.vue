@@ -50,10 +50,10 @@
 			@click="stopService()" 
 			:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
 
-		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()">Log out</a>
+		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()">Sign out from Telegram</a>
 		<RouterLink v-else to="/signIn" class="btn btn-primary">Log in</RouterLink>
-
 		<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>
+		<a role="button" class="btn btn-primary btn-small" @click="signOut()">Sign out</a>
 	</div>
 </div>
 </template>
@@ -89,14 +89,20 @@ export default {
 		async updateServiceState() {
 			try {
 				this.serviceState = await store.getServiceState();
-			} catch (error) {
-				this.serviceState = -1;
-				console.log(error);
+			} catch (e) {
+				if (e.response.status === 401) {
+					this.$router.push({ name: "SignIn" });
+				}
+				throw e;
 			}
 		},
 		async logOutFromTgAccount() {
 			await store.logOutFromTgAccount();
 			this.user = null;
+		},
+		async signOut() {
+			await store.signOut();
+			this.$router.push({ name: "SignIn" });
 		}
 	},
 	computed: {

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TgSeeker.Web.Services;
 
 namespace TgSeeker.Web.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ApplicationController : ControllerBase

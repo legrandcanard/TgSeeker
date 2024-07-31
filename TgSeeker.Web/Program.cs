@@ -2,6 +2,18 @@ using TgSeeker.Persistent;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Persistent.Sqlite.Repositiories;
 using TgSeeker.Web.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TgSeeker.Web.Data;
+using TgSeeker.Web.Areas.Identity.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.CookiePolicy;
 
 namespace TgSeeker.Web
 {
@@ -9,9 +21,22 @@ namespace TgSeeker.Web
     {
         public static async Task Main(string[] args)
         {
-            await DbInitializer.InitializeAsync();
-
             var builder = WebApplication.CreateBuilder(args);
+            var connectionString = builder.Configuration.GetConnectionString("ApplicationIdentityContextConnection") ?? throw new InvalidOperationException("Connection string 'ApplicationIdentityContextConnection' not found.");
+
+            builder.Services.AddDbContext<ApplicationIdentityContext>(options => options.UseSqlite(connectionString));
+
+            builder.Services.AddControllers();
+
+            builder.Services.AddDefaultIdentity<TgsUser>(options => {
+                options.SignIn.RequireConfirmedAccount = false;
+                options.SignIn.RequireConfirmedEmail = false;
+                options.SignIn.RequireConfirmedPhoneNumber = false;
+                options.User.RequireUniqueEmail = false;
+            })
+            .AddUserManager<TgsUserManager>()
+            .AddSignInManager()
+            .AddEntityFrameworkStores<ApplicationIdentityContext>();
 
             {
                 var tgSeekerService = new TgSeekerHostedService();
@@ -21,21 +46,24 @@ namespace TgSeeker.Web
 
             builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 
-            builder.Services.AddCors(options =>
+            builder.Services.ConfigureApplicationCookie(options =>
             {
-                var origins = new[] { builder.Configuration["clientUrlHttp"], builder.Configuration["clientUrlHttps"] };
+                // Cookie settings
+                options.Cookie.HttpOnly = true;
+                //options.ExpireTimeSpan = TimeSpan.FromDays(10);
+                //options.Cookie.MaxAge = TimeSpan.FromDays(10);
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 
-                options.AddPolicy(name: "_myAllowSpecificOrigins",
-                                  policy =>
-                                  {
-                                      policy.WithOrigins(origins);
-                                      policy.AllowAnyMethod();
-                                      policy.AllowAnyHeader();
-                                  });
+                //options.LoginPath = "/Identity/Account/Login";
+                //options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+                options.SlidingExpiration = true;
+                options.Events.OnRedirectToLogin = (context) =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
             });
-
-            // Add services to the container.
-            builder.Services.AddRazorPages();
 
             var app = builder.Build();
 
@@ -46,18 +74,42 @@ namespace TgSeeker.Web
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
             
-            app.UseCors("_myAllowSpecificOrigins");
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
             app.MapFallbackToFile("index.html");
+
+            await DbInitializer.InitializeAsync();
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbIdentityContext = scope.ServiceProvider.GetService<ApplicationIdentityContext>();
+                await dbIdentityContext.Database.MigrateAsync();
+
+                var userManager = scope.ServiceProvider.GetService<TgsUserManager>();
+                var passwordHasher = scope.ServiceProvider.GetService<IPasswordHasher<TgsUser>>();
+
+                var userName = builder.Configuration["adminUsername"];
+
+                var user = await userManager.FindByNameAsync(userName);
+                if (user == null)
+                {
+                    user = new TgsUser
+                    {
+                        UserName = userName,
+                        NormalizedEmail = userName.ToUpperInvariant(),
+                    };
+                    user.PasswordHash = passwordHasher.HashPassword(user, builder.Configuration["adminUserPassword"]);
+
+                    await userManager.CreateAsync(user);
+                }
+            }
 
             app.Run();
         }

@@ -11,17 +11,28 @@ import { createWebHistory , createRouter } from 'vue-router'
 import HomeView from './views/HomeView.vue'
 import SignInView from './views/SignInView.vue'
 import SettingsView from './views/SettingsView.vue'
+import AccountSignInView from './views/AccountSignInView.vue'
+
 const routes = [
-  { path: '/', component: HomeView },
-  { path: '/signIn', component: SignInView },
-  { path: '/settings', component: SettingsView },
+    { path: '/', component: HomeView, name: "Home" },
+    { path: '/signIn', component: SignInView },
+    { path: '/settings', component: SettingsView },
+    { path: '/account/signIn', component: AccountSignInView, name: "SignIn" },
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
+    history: createWebHistory(),
+    routes,
 })
 
+import { store } from './store.js';
+/*
+router.beforeEach((to, from) => {
+    if (!store.isUserAuthorized() && to.name !== "SignIn") {
+        return { name: "SignIn" };
+    }
+});
+*/
 router.afterEach((to, from) => {
     const toDepth = to.path.split('/').length
     const fromDepth = from.path.split('/').length

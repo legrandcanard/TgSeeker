@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TdLib;
 using TgSeeker.Web.Models;
 using TgSeeker.Web.Services;
@@ -7,6 +8,7 @@ using TgSeeker.Web.Services;
 
 namespace TgSeeker.Web.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -27,6 +29,8 @@ namespace TgSeeker.Web.Controllers
         [HttpGet("currentUser")]
         public TdApi.User GetCurrentUser()
         {
+            
+            var test = HttpContext.User.Identity;
             return _tgSeekerHostedService.CurrentUser;
         }
 

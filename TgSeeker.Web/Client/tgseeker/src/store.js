@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import axios from 'axios'
+import Cookies from 'js-cookie'
 
 const client = axios.create({
     baseURL: import.meta.env.VITE_VUE_APP_BASE_URL + "api/"
@@ -53,4 +54,22 @@ export const store = reactive({
     async stopService() {
         return await post("/application/stopService");
     },
+
+    // Authorization
+    async signIn(username, password) {
+        try
+        {
+            await post("/account/signIn", {
+                username: username,
+                password: password
+            });
+            return true;
+        }
+        catch (e) {
+            return false;
+        }
+    },
+    async signOut() {
+        await get("/account/signOut");
+    }
 })

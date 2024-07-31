@@ -18,18 +18,20 @@
             </div>
         </div>
         <div class="d-grid gap-2">
-            <a href="#" role="button" class="btn btn-primary block" @click="save()">Save</a>
+            <a href="#" role="button" :class="saveBtnClass" @click="save()">Save</a>
         </div>
     </div>
 </template>
 
 <script>
 import { store } from '../store'
+import { withExecutionStateAsync } from '/src/utils';
 export default {
     data() {
         return {
             apiId: null,
-            apiHash: null
+            apiHash: null,
+            isSaveRequestPending: { state: false }
         }
     },
     async mounted() {
@@ -39,7 +41,14 @@ export default {
     },
     methods: {
         async save() {
-            await store.saveSettings({ apiId: this.apiId, apiHash: this.apiHash });
+            await withExecutionStateAsync(this.isSaveRequestPending,
+                async () => await store.saveSettings({ apiId: this.apiId, apiHash: this.apiHash }), 1000);
+                this.$router.push({ name: "Home" });
+        }
+    },
+    computed: {
+        saveBtnClass() {
+            return this.isSaveRequestPending.state ? "btn btn-primary block disabled" : "btn btn-primary block";
         }
     }
 }
