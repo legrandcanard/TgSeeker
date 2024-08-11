@@ -4,8 +4,6 @@ using TdLib;
 using TgSeeker.Web.Models;
 using TgSeeker.Web.Services;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace TgSeeker.Web.Controllers
 {
     [Authorize]
@@ -29,8 +27,6 @@ namespace TgSeeker.Web.Controllers
         [HttpGet("currentUser")]
         public TdApi.User GetCurrentUser()
         {
-            
-            var test = HttpContext.User.Identity;
             return _tgSeekerHostedService.CurrentUser;
         }
 

@@ -51,7 +51,9 @@
 			:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
 
 		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()">Sign out from Telegram</a>
-		<RouterLink v-else to="/signIn" class="btn btn-primary">Log in</RouterLink>
+		<RouterLink v-else to="/signIn" class="btn btn-primary">Sign in to Telegram</RouterLink>
+
+		<RouterLink to="/account" class="btn btn-primary">My account</RouterLink>
 		<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>
 		<a role="button" class="btn btn-primary btn-small" @click="signOut()">Sign out</a>
 	</div>
@@ -68,11 +70,12 @@ export default {
 			user: null,
 			serviceState: null,
 			isServerStateChangeRequestPending: { state: false },
-			iconUrl: new URL('@/assets/tgs_logo.png', import.meta.url).href
+			iconUrl: new URL('@/assets/tgs_logo.png', import.meta.url).href,			
 		}
 	},
 	async mounted() {
 		await this.updateServiceState();
+		setInterval(this.updateServiceState.bind(this), 5000);
 		this.user = await store.getCurrentUser();
 	},
 	methods: {

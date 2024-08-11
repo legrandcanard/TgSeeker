@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace TgSeeker.Web
 {
@@ -33,6 +34,10 @@ namespace TgSeeker.Web
                 options.SignIn.RequireConfirmedEmail = false;
                 options.SignIn.RequireConfirmedPhoneNumber = false;
                 options.User.RequireUniqueEmail = false;
+
+                options.Password.RequireUppercase = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireNonAlphanumeric = false;
             })
             .AddUserManager<TgsUserManager>()
             .AddSignInManager()
@@ -82,6 +87,14 @@ namespace TgSeeker.Web
             
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseExceptionHandler(a => a.Run(async context =>
+            {
+                var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+                var exception = exceptionHandlerPathFeature.Error;
+
+                await context.Response.WriteAsJsonAsync(new { error = exception.Message });
+            }));
 
             app.MapControllers();
             app.MapFallbackToFile("index.html");

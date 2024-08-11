@@ -132,11 +132,17 @@ namespace TgSeeker
                 }
                 else if (e is TdApi.Update.UpdateNewMessage updateNewMessage)
                 {
+                    if (CurrentUser == null)
+                        throw new ArgumentNullException("CurrentUser is not set");
+
                     var handler = new NewMessageEventHandler(new TgsEventHandlerOptions { CurrentUser = CurrentUser }, _client, _messagesRepository);
                     await handler.HandleAsync(updateNewMessage);
                 }
                 else if (e is TdApi.Update.UpdateDeleteMessages updateDeleteMessages)
                 {
+                    if (CurrentUser == null)
+                        throw new ArgumentNullException("CurrentUser is not set");
+
                     var handler = new MessagesDeletedEventHandler(new TgsEventHandlerOptions { CurrentUser = CurrentUser }, _client, _messagesRepository);
                     await handler.HandleAsync(updateDeleteMessages);
                 }

@@ -1,6 +1,5 @@
 import { reactive } from 'vue'
 import axios from 'axios'
-import Cookies from 'js-cookie'
 
 const client = axios.create({
     baseURL: import.meta.env.VITE_VUE_APP_BASE_URL + "api/"
@@ -71,5 +70,11 @@ export const store = reactive({
     },
     async signOut() {
         await get("/account/signOut");
+    },
+    async getAccountDetails() {
+        return await get("/account/details");
+    },
+    async changePassword(data) {
+        return await post("/account/changePassword", data);
     }
 })

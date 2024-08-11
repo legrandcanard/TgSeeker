@@ -26,6 +26,8 @@
 <script>
 import { store } from '../store'
 import { withExecutionStateAsync } from '/src/utils';
+import { useToast } from "vue-toastification";
+
 export default {
     data() {
         return {
@@ -43,7 +45,9 @@ export default {
         async save() {
             await withExecutionStateAsync(this.isSaveRequestPending,
                 async () => await store.saveSettings({ apiId: this.apiId, apiHash: this.apiHash }), 1000);
-                this.$router.push({ name: "Home" });
+            const toast = useToast();
+            toast.success("Settings saved successfully!");
+            this.$router.push({ name: "Home" });
         }
     },
     computed: {
