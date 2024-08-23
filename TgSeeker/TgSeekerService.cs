@@ -31,43 +31,6 @@ namespace TgSeeker
             _logger = logger;
         }
 
-        public async Task StartAsync()
-        {
-            if (ServiceState == ServiceStates.Running)
-            {
-                _logger?.LogInfo("Attempt to start same instance twice.");
-                return;
-            }
-
-            try
-            {
-                await InitParamsFromSettingsRepositoryAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError("Faield to init client parameters from settings.");
-                return;
-            }
-
-            _client = new TdClient();
-            _client.UpdateReceived += HandleUpdate;
-            ServiceState = ServiceStates.Running;
-        }
-
-        public Task StopAsync()
-        {
-            if (_client == null)
-                return Task.CompletedTask;
-
-            _client.UpdateReceived -= HandleUpdate;
-            _client.Dispose();
-            _client = null;
-            ServiceState = ServiceStates.Idle;
-            _isServiceReady = false;
-
-            return Task.CompletedTask;
-        }
-
         private async void HandleUpdate(object? sender, TdApi.Update e)
         {
             // Important: do not await any calls to client here, that will result in HandleUpdate circle call. Doing so will result in deadlock
@@ -187,7 +150,69 @@ namespace TgSeeker
 
         #endregion
 
-        #region Initialization
+        #region Auth
+        public async Task SendAuthenticationCodeToPhone(string phoneNumber)
+        {
+            await _client.SetAuthenticationPhoneNumberAsync(phoneNumber);
+        }
+
+        public async Task CheckAuthenticationCodeAsync(string code)
+        {
+            await _client.CheckAuthenticationCodeAsync(code);
+        }
+
+        public async Task LogOut()
+        {
+            await _client.LogOutAsync();
+            CurrentUser = null;
+            AuthorizationState = AuthStates.AuthRequired;
+        }
+        #endregion
+
+        #region Life cycle
+        public async Task StartAsync()
+        {
+            if (ServiceState == ServiceStates.Running)
+            {
+                _logger?.LogInfo("Attempt to start same instance twice.");
+                return;
+            }
+
+            try
+            {
+                await InitParamsFromSettingsRepositoryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError("Faield to init client parameters from settings.");
+                ServiceState = ServiceStates.BadConfiguration;
+                return;
+            }
+
+            _client = new TdClient();
+            _client.UpdateReceived += HandleUpdate;
+            ServiceState = ServiceStates.Running;
+        }
+
+        public Task StopAsync()
+        {
+            if (_client == null)
+                return Task.CompletedTask;
+
+            _client.UpdateReceived -= HandleUpdate;
+            _client.Dispose();
+            _client = null;
+            ServiceState = ServiceStates.Idle;
+            _isServiceReady = false;
+
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _client?.Dispose();
+        }
+
         private async Task InitParamsFromSettingsRepositoryAsync()
         {
             var settings = await _settingsRepository.GetSettingsAsync();
@@ -245,30 +270,6 @@ namespace TgSeeker
         }
         #endregion
 
-        #region Auth
-        public async Task SendAuthenticationCodeToPhone(string phoneNumber)
-        {
-            await _client.SetAuthenticationPhoneNumberAsync(phoneNumber);
-        }
-
-        public async Task CheckAuthenticationCodeAsync(string code)
-        {
-            await _client.CheckAuthenticationCodeAsync(code);
-        }
-
-        public async Task LogOut()
-        {
-            await _client.LogOutAsync();
-            CurrentUser = null;
-            AuthorizationState = AuthStates.AuthRequired;
-        }
-        #endregion
-
-        public void Dispose()
-        {
-            _client?.Dispose();
-        }
-
         public enum AuthStates
         {
             AuthRequired,
@@ -279,7 +280,10 @@ namespace TgSeeker
         public enum ServiceStates
         {
             Idle,
-            Running
+            Running,
+            BadConfiguration,
+            AuthRequired
         }
+
     }
 }
