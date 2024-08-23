@@ -1,8 +1,9 @@
 ﻿
 using TdLib;
 using TgSeeker.Persistent.Repositiories;
+using TgSeeker.Util;
 
-namespace TgSeeker.EventHandlers.Util
+namespace TgSeeker.EventHandlers.Messages
 {
     public abstract class TgsMessageEventHandler
     {

@@ -1,9 +1,9 @@
 ﻿using TdLib;
-using TgSeeker.EventHandlers.Util;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Persistent.Entities;
 using static TdLib.TdApi.InputFile;
-using System.Reflection;
+using TgSeeker.Util;
+using TgSeeker.EventHandlers.Expections;
 
 namespace TgSeeker.EventHandlers.Messages
 {
@@ -15,13 +15,16 @@ namespace TgSeeker.EventHandlers.Messages
 
         public async Task HandleCreateAsync(TdApi.Message message)
         {
+            if (message.Content is not TdApi.MessageContent.MessageVoiceNote textMessage)
+                throw new WrongMessageTypeException();
+
             var voiceNoteMsg = message.Content as TdApi.MessageContent.MessageVoiceNote ?? throw new Exception("Wrong message type");
 
             var file = await Client.DownloadFileAsync(voiceNoteMsg.VoiceNote.Voice.Id, priority: 3, limit: int.MaxValue, synchronous: true);
 
             Directory.CreateDirectory(voiceDirPath);
 
-            using var newFileFs = File.Create(Path.Combine(voiceDirPath, $"{voiceDirPath + file.Remote.UniqueId}.{VoiceFileExtenion})"));
+            using var newFileFs = File.Create(Path.Combine(voiceDirPath, $"{voiceDirPath + file.Remote.UniqueId}.{VoiceFileExtenion}"));
             using var tdlibFileCacheFs = File.OpenRead(file.Local.Path);
             tdlibFileCacheFs.CopyTo(newFileFs);
 
@@ -37,12 +40,15 @@ namespace TgSeeker.EventHandlers.Messages
 
         public async Task HandleDeleteAsync(TgsVoiceMessage voiceMessage)
         {
+            var fromUser = await Client.GetUserAsync(voiceMessage.ChatId);
+
             string filePath = Path.Combine(voiceDirPath, $"{voiceMessage.LocalFileId}.{VoiceFileExtenion}");
 
             await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
             {
                 Waveform = voiceMessage.Waveform,
                 Duration = voiceMessage.Duration,
+                Caption = new TdApi.FormattedText { Text = TgsTextHelper.GetMessageDeletedTitle(fromUser) },
                 VoiceNote = new InputFileLocal
                 {
                     Path = filePath

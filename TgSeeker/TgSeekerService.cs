@@ -1,8 +1,6 @@
 ﻿using TdLib;
-using TdLib.Bindings;
-using TgSeeker.EventHandlers;
 using TgSeeker.EventHandlers.Messages;
-using TgSeeker.EventHandlers.Util;
+using TgSeeker.Util;
 using TgSeeker.Persistent.Entities;
 using TgSeeker.Persistent.Repositiories;
 using static TdLib.TdApi;

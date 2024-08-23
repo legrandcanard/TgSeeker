@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TdLib;
 
-namespace TgSeeker.EventHandlers.Util
+namespace TgSeeker.Util
 {
     public class TgsEventHandlerOptions
     {

@@ -1,4 +1,4 @@
-﻿using TgSeeker.EventHandlers.Util;
+﻿using TgSeeker.Util;
 
 namespace TgSeeker.Web.Util
 {
