@@ -1,7 +1,7 @@
 <template>
     <div class="main-panel">
         <img :src="iconUrl" class="mb-5" />
-        <h1 class="h3 mb-0">Welcome back! 1</h1>
+        <h1 class="h3 mb-0">Welcome back!</h1>
         <p class="text-secondary mb-3">Please enter login details below</p>
         <div class="d-grid gap-3">
             <div class="form-floating">

@@ -5,7 +5,7 @@ export function sleep(ms) {
 export async function withExecutionStateAsync(ref, fn, minTime) {
     ref.state = true;
     const startTime = new Date();
-    await fn();
+    const result = await fn();
     const endTime = new Date();
     const differenceMs = endTime - startTime;
     if (differenceMs < minTime) {
@@ -14,4 +14,6 @@ export async function withExecutionStateAsync(ref, fn, minTime) {
     }
     else
         ref.state = false;
+
+    return result;
 }

@@ -2,14 +2,16 @@
 <div class="main-panel">
 	<img :src="iconUrl" />
 	<div>
-		<span v-if="serviceState == 1" class="badge text-bg-success app-status">
+		<span v-if="serviceState == -1" class="badge text-bg-danger app-status">Error</span>
+		<span v-else-if="serviceState == 0" class="badge text-bg-warning app-status">Idle</span>
+		<span v-else-if="serviceState == 1" class="badge text-bg-success app-status">
 			<div class="spinner-grow text-light loading-small" role="status">
 				<span class="visually-hidden">Loading...</span>
 			</div>
 			Running
 		</span>
-		<span v-else-if="serviceState == 0" class="badge text-bg-warning app-status">Idle</span>
-		<span v-else-if="serviceState == -1" class="badge text-bg-danger app-status">Error</span>
+		<span v-else-if="serviceState == 2" class="badge text-bg-danger app-status">Bad configuration</span>
+		<span v-else-if="serviceState == 3" class="badge text-bg-warning app-status">Telegram authentication required</span>
 		<span v-else class="badge text-bg-primary app-status">
 			<div class="spinner-border spinner-border-sm text-light" role="status">
 				<span class="visually-hidden">Loading...</span>
@@ -35,12 +37,9 @@
 			<div class="text-secondary">User id</div>
 		</div>
 	</div>
-	<div v-else>
-		<span class="badge text-bg-warning">Authorization required!</span>
-	</div>
 	<div class="d-grid gap-2 mt-2">
 
-		<a v-if="serviceState == 0" role="button" 
+		<a v-if="serviceState != 1" role="button" 
 			:class="isServerStateChangeRequestPending.state ? 'btn btn-primary disabled' : 'btn btn-primary'" 
 			@click="startService()" 
 			:aria-disabled="isServerStateChangeRequestPending.state">Start service</a>
@@ -50,9 +49,10 @@
 			@click="stopService()" 
 			:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
 
-		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()">Sign out from Telegram</a>
+		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()"
+			:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'">Sign out from Telegram</a>
 		<RouterLink v-else to="/signIn" 
-			:class="serviceState == 0 ? 'btn btn-primary disabled' : 'btn btn-primary'" >Sign in to Telegram</RouterLink>
+			:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'" >Sign in to Telegram</RouterLink>
 
 		<RouterLink to="/account" class="btn btn-primary">My account</RouterLink>
 		<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>
@@ -64,6 +64,7 @@
 <script>
 import { store } from '/src/store';
 import { withExecutionStateAsync } from '/src/utils';
+import { useToast } from "vue-toastification";
 
 export default {
 	data() {
@@ -71,24 +72,40 @@ export default {
 			user: null,
 			serviceState: null,
 			isServerStateChangeRequestPending: { state: false },
+			serviceStatusUpdateInterval: null,
 			iconUrl: new URL('@/assets/tgs_logo.png', import.meta.url).href,			
 		}
 	},
-	async mounted() {
+	async beforeMount() {
 		await this.updateServiceState();
-		setInterval(this.updateServiceState.bind(this), 5000);
+		this.serviceStatusUpdateInterval = setInterval(this.updateServiceState.bind(this), 5000);
 		this.user = await store.getCurrentUser();
+	},
+	async beforeUnmount() {
+		clearInterval(this.serviceStatusUpdateInterval);
 	},
 	methods: {
 		async startService() {
-			await withExecutionStateAsync(this.isServerStateChangeRequestPending,
+			this.serviceState = await withExecutionStateAsync(this.isServerStateChangeRequestPending,
 				store.startService, 1000);
-			await this.updateServiceState();
+
+			if (this.serviceState === 1) {
+				useToast().success("Service is now running!");
+			}
+			else {
+				useToast().warning("Failed to start the service.");
+			}
 		},
 		async stopService() {
-			await withExecutionStateAsync(this.isServerStateChangeRequestPending,
+			this.serviceState = await withExecutionStateAsync(this.isServerStateChangeRequestPending,
 				store.stopService, 1000);
-			await this.updateServiceState();
+
+			if (this.serviceState === 0) {
+				useToast().info("Service has been stopped.");
+			}
+			else {
+				useToast().warning("Failed to stop the service.");
+			}	
 		},
 		async updateServiceState() {
 			try {
@@ -97,6 +114,7 @@ export default {
 				if (e.response.status === 401) {
 					this.$router.push({ name: "SignIn" });
 				}
+				useToast().warning("Server error occured.");
 				throw e;
 			}
 		},

@@ -17,23 +17,27 @@ namespace TgSeeker.Web.Controllers
         }
 
         [HttpGet("serviceState")]
-        public TgSeekerHostedService.ServiceStates ServiceState()
+        public TgSeekerService.ServiceStates ServiceState()
         {
             return _tgSeekerHostedService.ServiceState;
         }
 
         [HttpPost("startService")]
-        public async Task StartService()
+        public async Task<TgSeekerService.ServiceStates> StartService()
         {
-            if (_tgSeekerHostedService.ServiceState == TgSeekerService.ServiceStates.Idle)
+            if (_tgSeekerHostedService.ServiceState != TgSeekerService.ServiceStates.Running)
                 await _tgSeekerHostedService.StartAsync();
+
+            return _tgSeekerHostedService.ServiceState;
         }
 
         [HttpPost("stopService")]
-        public async Task StopService()
+        public async Task<TgSeekerService.ServiceStates> StopService()
         {
             if (_tgSeekerHostedService.ServiceState == TgSeekerService.ServiceStates.Running)
                 await _tgSeekerHostedService.StopAsync();
+
+            return _tgSeekerHostedService.ServiceState;
         }
     }
 }
