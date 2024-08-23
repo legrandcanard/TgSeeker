@@ -458,3 +458,4 @@ TgSeeker.Web/tdlib/*
 TgSeeker.Web/*.db
 TgSeeker.Web/*.db-shm
 TgSeeker.Web/*.db-wal
+/TgSeeker.Web/cache/voice
