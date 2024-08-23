@@ -28,10 +28,14 @@ namespace TgSeeker.EventHandlers.Messages
             using var tdlibFileCacheFs = File.OpenRead(file.Local.Path);
             tdlibFileCacheFs.CopyTo(newFileFs);
 
+            DateTime createdDate = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            createdDate = createdDate.AddSeconds(message.Date).ToUniversalTime();
+
             await MessagesRepository.CreateMessage(new TgsVoiceMessage
             {
                 Id = message.Id,
                 ChatId = message.ChatId,
+                CreateDate = createdDate,
                 LocalFileId = file.Remote.UniqueId,
                 Waveform = voiceNoteMsg.VoiceNote.Waveform,
                 Duration = voiceNoteMsg.VoiceNote.Duration,
