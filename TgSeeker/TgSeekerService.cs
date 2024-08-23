@@ -24,11 +24,6 @@ namespace TgSeeker
         public AuthStates AuthorizationState { get; protected set; }
         public User? CurrentUser { get; protected set; }
 
-        #region Events
-        public event EventHandler<AuthStates> AuthStateChange;
-        public event EventHandler<Exception> ErrorOccur;
-        #endregion
-
         public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository, ITgsServiceLogger? logger = null)
         {
             _messagesRepository = messagesRepository;
@@ -40,7 +35,7 @@ namespace TgSeeker
         {
             if (ServiceState == ServiceStates.Running)
             {
-                ErrorOccur?.Invoke(this, new Exception("Error: Attempt to start same instance twice."));
+                _logger?.LogInfo("Attempt to start same instance twice.");
                 return;
             }
 
@@ -50,7 +45,7 @@ namespace TgSeeker
             }
             catch (Exception ex)
             {
-                ErrorOccur?.Invoke(this, ex);
+                _logger?.LogError("Faield to init client parameters from settings.");
                 return;
             }
 
@@ -90,17 +85,14 @@ namespace TgSeeker
                         CurrentUser = await _client.GetMeAsync();
                         ServiceState = ServiceStates.Running;
                         AuthorizationState = AuthStates.AuthComplete;
-                        AuthStateChange?.Invoke(this, AuthStates.AuthComplete);
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationState.AuthorizationStateWaitCode)
                     {
                         AuthorizationState = AuthStates.AuthCodeValidationPending;
-                        AuthStateChange?.Invoke(this, AuthStates.AuthCodeValidationPending);
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationStateWaitPhoneNumber)
                     {
                         AuthorizationState = AuthStates.AuthRequired;
-                        AuthStateChange?.Invoke(this, AuthStates.AuthRequired);
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationStateClosed)
                     {
@@ -123,7 +115,7 @@ namespace TgSeeker
             }
             catch (Exception ex)
             {
-                ErrorOccur?.Invoke(this, ex);
+                _logger?.LogError(ex.Message);
             }
         }
 
