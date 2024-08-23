@@ -14,10 +14,13 @@ namespace TgSeeker.Persistent.Sqlite.Migrations
                 name: "Messages",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<long>(type: "INTEGER", nullable: false),
                     ChatId = table.Column<long>(type: "INTEGER", nullable: false),
-                    Text = table.Column<string>(type: "TEXT", nullable: false)
+                    Discriminator = table.Column<string>(type: "TEXT", maxLength: 21, nullable: false),
+                    Text = table.Column<string>(type: "TEXT", nullable: true),
+                    Waveform = table.Column<byte[]>(type: "BLOB", nullable: true),
+                    Duration = table.Column<int>(type: "INTEGER", nullable: true),
+                    LocalFileId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {

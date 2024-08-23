@@ -15,4 +15,8 @@
     <ProjectReference Include="..\TgSeeker.Persistent\TgSeeker.Persistent.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="EventHandlers\Voice\" />
+  </ItemGroup>
+
 </Project>

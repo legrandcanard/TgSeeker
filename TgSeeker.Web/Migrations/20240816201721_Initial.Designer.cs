@@ -11,7 +11,7 @@ using TgSeeker.Web.Data;
 namespace TgSeeker.Web.Migrations
 {
     [DbContext(typeof(ApplicationIdentityContext))]
-    [Migration("20240715145428_Initial")]
+    [Migration("20240816201721_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

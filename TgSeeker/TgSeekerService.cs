@@ -1,11 +1,14 @@
 ﻿using TdLib;
 using TdLib.Bindings;
 using TgSeeker.EventHandlers;
+using TgSeeker.EventHandlers.Messages;
 using TgSeeker.EventHandlers.Util;
 using TgSeeker.Persistent.Entities;
 using TgSeeker.Persistent.Repositiories;
 using static TdLib.TdApi;
 using static TdLib.TdApi.AuthorizationState;
+using static TdLib.TdApi.MessageContent;
+using static TdLib.TdApi.Update;
 
 namespace TgSeeker
 {
@@ -14,8 +17,10 @@ namespace TgSeeker
         private TdClient? _client;
         private readonly IMessagesRepository _messagesRepository;
         private readonly ISettingsRepository _settingsRepository;
+        private readonly ITgsServiceLogger? _logger;
         private int _apiId;
         private string _apiHash;
+        private bool _isServiceReady = false;
 
         public ServiceStates ServiceState { get; protected set; }
         public AuthStates AuthorizationState { get; protected set; }
@@ -26,10 +31,11 @@ namespace TgSeeker
         public event EventHandler<Exception> ErrorOccur;
         #endregion
 
-        public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository)
+        public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository, ITgsServiceLogger? logger = null)
         {
             _messagesRepository = messagesRepository;
             _settingsRepository = settingsRepository;
+            _logger = logger;
         }
 
         public async Task StartAsync()
@@ -64,36 +70,14 @@ namespace TgSeeker
             _client.Dispose();
             _client = null;
             ServiceState = ServiceStates.Idle;
+            _isServiceReady = false;
 
             return Task.CompletedTask;
         }
 
-        private async Task InitParamsFromSettingsRepositoryAsync()
-        {
-            var settings = await _settingsRepository.GetSettingsAsync();
-
-            if (!settings.TryGetValue("ApiId", out string? strApiId))
-                throw new Exception("Error settings up parameters: api_id is required.");
-
-            try
-            {
-                _apiId = Convert.ToInt32(strApiId);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error settings up parameters: api_id is invalid.", ex);
-            }
-
-            if (!settings.TryGetValue("ApiHash", out _apiHash))
-                throw new Exception("Error settings up parameters: api_hash is required.");
-
-            if (string.IsNullOrEmpty(_apiHash))
-                throw new Exception("Error settings up parameters: api_hash is invalid.");
-        }
-
         private async void HandleUpdate(object? sender, TdApi.Update e)
         {
-            // Important: do not await any calls to client here, doing so will result in deadlock
+            // Important: do not await any calls to client here, that will result in HandleUpdate circle call. Doing so will result in deadlock
 
             try
             {
@@ -132,25 +116,122 @@ namespace TgSeeker
                 }
                 else if (e is TdApi.Update.UpdateNewMessage updateNewMessage)
                 {
-                    if (CurrentUser == null)
-                        throw new ArgumentNullException("CurrentUser is not set");
-
-                    var handler = new NewMessageEventHandler(new TgsEventHandlerOptions { CurrentUser = CurrentUser }, _client, _messagesRepository);
-                    await handler.HandleAsync(updateNewMessage);
+                    await HandleNewMessageAsync(updateNewMessage);
                 }
                 else if (e is TdApi.Update.UpdateDeleteMessages updateDeleteMessages)
                 {
-                    if (CurrentUser == null)
-                        throw new ArgumentNullException("CurrentUser is not set");
-
-                    var handler = new MessagesDeletedEventHandler(new TgsEventHandlerOptions { CurrentUser = CurrentUser }, _client, _messagesRepository);
-                    await handler.HandleAsync(updateDeleteMessages);
+                    await HandleDeleteMessagesAsync(updateDeleteMessages);
                 }
             }
             catch (Exception ex)
             {
                 ErrorOccur?.Invoke(this, ex);
             }
+        }
+
+        #region Messages
+
+        public async Task HandleNewMessageAsync(UpdateNewMessage updateNewMessage)
+        {
+            if (CurrentUser == null)
+                throw new ArgumentException("CurrentUser is not set");
+
+            var message = updateNewMessage.Message;
+
+            if (CurrentUser.Id == message.ChatId)
+                return;
+
+            if (message.IsChannelPost || message.IsTopicMessage || message.ChatId < 0)
+                return;
+
+            var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
+
+            await EnsureServiceReadyAsync();
+
+            if (updateNewMessage.Message.Content is MessageVoiceNote)
+            {
+                await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(updateNewMessage.Message);
+            }
+            else if (updateNewMessage.Message.Content is MessageText) // text
+            {
+                await new TextMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(updateNewMessage.Message);
+            }
+            else
+            {
+                //todo: implement other message types
+            }
+        }
+
+        public async Task HandleDeleteMessagesAsync(UpdateDeleteMessages updateDeleteMessages)
+        {
+            if (CurrentUser == null)
+                throw new ArgumentException("CurrentUser is not set");
+
+            if (updateDeleteMessages.FromCache)
+                return;
+
+            if (updateDeleteMessages.ChatId == CurrentUser.Id)
+                return;
+
+            var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
+            
+            var messages = await _messagesRepository.GetMessagesAsync(updateDeleteMessages.ChatId, updateDeleteMessages.MessageIds);
+            foreach (var messageId in updateDeleteMessages.MessageIds)
+            {
+                var message = messages.FirstOrDefault(m => m.Id == messageId);
+                if (message == null)
+                {
+                    continue;
+                }
+
+                if (message is TgsVoiceMessage voiceMessage)
+                {
+                    await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(voiceMessage);
+                }
+                else if (message is TgsTextMessage textMessage)
+                {
+                    await new TextMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(textMessage);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Initialization
+        private async Task InitParamsFromSettingsRepositoryAsync()
+        {
+            var settings = await _settingsRepository.GetSettingsAsync();
+
+            if (!settings.TryGetValue("ApiId", out string? strApiId))
+                throw new Exception("Error settings up parameters: api_id is required.");
+
+            try
+            {
+                _apiId = Convert.ToInt32(strApiId);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error settings up parameters: api_id is invalid.", ex);
+            }
+
+            if (!settings.TryGetValue("ApiHash", out _apiHash))
+                throw new Exception("Error settings up parameters: api_hash is required.");
+
+            if (string.IsNullOrEmpty(_apiHash))
+                throw new Exception("Error settings up parameters: api_hash is invalid.");
+
+            _apiHash = _apiHash.Trim();
+        }
+
+        private async Task EnsureServiceReadyAsync()
+        {
+            if (_isServiceReady)
+                return;
+
+            // This will cache this chat for the client
+            await _client.LoadChatsAsync(limit: int.MaxValue);
+
+            _isServiceReady = true;
         }
 
         private async Task SetTdlibParamsAsync()
@@ -167,12 +248,14 @@ namespace TgSeeker
                     applicationVersion: "1.0"
                 );
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-
+                _logger?.LogError("Failed to set tdlib params. Error: " + e.Message);
             }
         }
+        #endregion
 
+        #region Auth
         public async Task SendAuthenticationCodeToPhone(string phoneNumber)
         {
             await _client.SetAuthenticationPhoneNumberAsync(phoneNumber);
@@ -189,6 +272,7 @@ namespace TgSeeker
             CurrentUser = null;
             AuthorizationState = AuthStates.AuthRequired;
         }
+        #endregion
 
         public void Dispose()
         {

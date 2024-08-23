@@ -6,13 +6,13 @@ namespace TgSeeker.Persistent.Repositiories
 {
     public class MessagesRepository : IMessagesRepository
     {
-        public async Task<Message[]> GetMessagesAsync(long chatId, long[] messageIds)
+        public async Task<TgsMessage[]> GetMessagesAsync(long chatId, long[] messageIds)
         {
             using var context = new ApplicationContext();
             return await context.Messages.Where(message => message.ChatId == chatId && messageIds.Contains(message.Id)).AsNoTracking().ToArrayAsync();
         }
 
-        public async Task CreateMessage(Message message)
+        public async Task CreateMessage(TgsMessage message)
         {
             using var context = new ApplicationContext();
             await context.Messages.AddAsync(message);

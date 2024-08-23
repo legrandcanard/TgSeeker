@@ -5,7 +5,7 @@ namespace TgSeeker.Persistent.Contexts
 {
     internal class ApplicationContext : DbContext
     {
-        public DbSet<Message> Messages { get; set; } = null!;
+        public DbSet<TgsMessage> Messages { get; set; } = null!;
         public DbSet<Option> Options { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -15,12 +15,15 @@ namespace TgSeeker.Persistent.Contexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Message>(entity =>
+            modelBuilder.Entity<TgsMessage>(entity =>
             {
-                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Id).ValueGeneratedNever();
                 entity.HasIndex(i => i.Id);
                 entity.HasIndex(i => i.ChatId);
             });
+
+            modelBuilder.Entity<TgsTextMessage>().HasBaseType<TgsMessage>();
+            modelBuilder.Entity<TgsVoiceMessage>().HasBaseType<TgsMessage>();
 
             modelBuilder.Entity<Option>(entity =>
             {

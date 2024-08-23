@@ -51,7 +51,8 @@
 			:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
 
 		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()">Sign out from Telegram</a>
-		<RouterLink v-else to="/signIn" class="btn btn-primary">Sign in to Telegram</RouterLink>
+		<RouterLink v-else to="/signIn" 
+			:class="serviceState == 0 ? 'btn btn-primary disabled' : 'btn btn-primary'" >Sign in to Telegram</RouterLink>
 
 		<RouterLink to="/account" class="btn btn-primary">My account</RouterLink>
 		<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TdLib;
+﻿using TdLib;
 using TgSeeker.EventHandlers.Util;
 using TgSeeker.Persistent.Repositiories;
 using static TdLib.TdApi;
@@ -34,7 +29,7 @@ namespace TgSeeker.EventHandlers
 
             if (message.Content is MessageContent.MessageText textMessage)
             {
-                await messagesRepository.CreateMessage(new Persistent.Entities.Message
+                await messagesRepository.CreateMessage(new Persistent.Entities.TgsTextMessage
                 {
                     Id = message.Id,
                     ChatId = message.ChatId,
@@ -43,24 +38,32 @@ namespace TgSeeker.EventHandlers
             }
             else if (message.Content is MessageContent.MessageVoiceNote voiceNoteMessage) 
             {
-                try
-                {
-                    var file = await Client.DownloadFileAsync(voiceNoteMessage.VoiceNote.Voice.Id, priority: 3, limit: int.MaxValue, synchronous: true);
-                    var msg = await Client.SendMessageAsync(options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
-                    {
-                        Waveform = voiceNoteMessage.VoiceNote.Waveform,
-                        Caption = voiceNoteMessage.Caption,
-                        Duration = voiceNoteMessage.VoiceNote.Duration,
-                        Extra = voiceNoteMessage.VoiceNote.Extra,
-                        VoiceNote = new InputFile.InputFileRemote
-                        {
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                }
-                    // Implement other message types
+                //try
+                //{
+                //    await Client.SendMessageAsync(options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageText
+                //    {
+                //        Text = new TdApi.FormattedText
+                //        {
+                //            Text = $"✉️🔥Test <via TgSeeker/>"
+                //        }
+                //    });
+
+                //    var file = await Client.DownloadFileAsync(voiceNoteMessage.VoiceNote.Voice.Id, priority: 3, limit: int.MaxValue, synchronous: true);
+                //    var msg = await Client.SendMessageAsync(options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
+                //    {
+                //        Waveform = voiceNoteMessage.VoiceNote.Waveform,
+                //        Caption = voiceNoteMessage.Caption,
+                //        Duration = voiceNoteMessage.VoiceNote.Duration,
+                //        Extra = voiceNoteMessage.VoiceNote.Extra,
+                //        VoiceNote = new InputFile.InputFileRemote
+                //        {
+                //            Id = file.Remote.Id
+                //        }
+                //    });
+                //}
+                //catch (Exception ex)
+                //{
+                //}
             }
         }
     }
