@@ -37,7 +37,7 @@
 		</div>
 	</div>
 	<span v-else-if="serviceState == 1" class="badge text-bg-warning app-status">Sign in to your Telegram account</span>
-	
+
 	<div class="d-grid gap-2 mt-2">
 
 		<a v-if="serviceState != 1" role="button" 
@@ -115,7 +115,9 @@ export default {
 				if (e.response.status === 401) {
 					this.$router.push({ name: "SignIn" });
 				}
-				useToast().warning("Server error occured.");
+				else {
+					useToast().warning("Server error occured.");
+				}
 				throw e;
 			}
 		},

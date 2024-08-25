@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Web.Models;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace TgSeeker.Web.Controllers
 {
     [Authorize]
