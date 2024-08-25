@@ -3,7 +3,7 @@ using TgSeeker.Persistent.Entities;
 
 namespace TgSeeker.Persistent.Contexts
 {
-    internal class ApplicationContext : DbContext
+    public class ApplicationContext : DbContext
     {
         public DbSet<TgsMessage> Messages { get; set; } = null!;
         public DbSet<Option> Options { get; set; } = null!;

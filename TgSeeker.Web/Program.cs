@@ -6,15 +6,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TgSeeker.Web.Data;
 using TgSeeker.Web.Areas.Identity.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OAuth;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Diagnostics;
+using TgSeeker.Persistent.Contexts;
 
 namespace TgSeeker.Web
 {
@@ -25,6 +18,7 @@ namespace TgSeeker.Web
             var builder = WebApplication.CreateBuilder(args);
             var connectionString = builder.Configuration.GetConnectionString("ApplicationIdentityContextConnection") ?? throw new InvalidOperationException("Connection string 'ApplicationIdentityContextConnection' not found.");
 
+            builder.Services.AddDbContext<ApplicationContext>();
             builder.Services.AddDbContext<ApplicationIdentityContext>(options => options.UseSqlite(connectionString));
 
             builder.Services.AddControllers();
@@ -42,9 +36,9 @@ namespace TgSeeker.Web
             .AddUserManager<TgsUserManager>()
             .AddSignInManager()
             .AddEntityFrameworkStores<ApplicationIdentityContext>();
-
+            
             {
-                var tgSeekerService = new TgSeekerHostedService();
+                var tgSeekerService = new TgSeekerHostedService(new MessagesRepository(new ApplicationContext()), new SettingsRepository());
                 builder.Services.AddSingleton<TgSeekerHostedService>(opts => tgSeekerService);
                 builder.Services.AddHostedService<TgSeekerHostedService>(opts => tgSeekerService);
             }

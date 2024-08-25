@@ -5,7 +5,8 @@ namespace TgSeeker.Persistent.Repositiories
     public interface IMessagesRepository
     {
         Task<TgsMessage[]> GetMessagesAsync(long chatId, long[] messageIds);
-        Task CreateMessage(TgsMessage message);
-        Task DeleteMessage(long messageId);
+        Task CreateMessageAsync(TgsMessage message);
+        Task DeleteMessageAsync(long messageId);
+        Task<TgsMessage[]> GetOldMessagesAsync();
     }
 }

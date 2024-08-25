@@ -18,7 +18,7 @@ namespace TgSeeker.EventHandlers.Messages
             DateTime createdDate = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             createdDate = createdDate.AddSeconds(message.Date).ToUniversalTime();
 
-            await MessagesRepository.CreateMessage(new TgsTextMessage
+            await MessagesRepository.CreateMessageAsync(new TgsTextMessage
             {
                 Id = message.Id,
                 ChatId = message.ChatId,
@@ -38,7 +38,7 @@ namespace TgSeeker.EventHandlers.Messages
                     Text = $"{TgsTextHelper.GetMessageDeletedTitle(fromUser)}:\n{textMessage.Text}"
                 }
             });
-            await MessagesRepository.DeleteMessage(textMessage.Id);
+            await MessagesRepository.DeleteMessageAsync(textMessage.Id);
         }
     }
 }

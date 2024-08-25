@@ -6,7 +6,7 @@ namespace TgSeeker.Web.Services
 {
     public class TgSeekerHostedService : TgSeekerService, IHostedService
     {
-        public TgSeekerHostedService() : base(new MessagesRepository(), new SettingsRepository()) 
+        public TgSeekerHostedService(IMessagesRepository messagesRepository, SettingsRepository settingsRepository) : base(messagesRepository, settingsRepository) 
         { }
 
         public async Task StartAsync(CancellationToken cancellationToken)

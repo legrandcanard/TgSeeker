@@ -31,7 +31,7 @@ namespace TgSeeker.EventHandlers.Messages
             DateTime createdDate = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             createdDate = createdDate.AddSeconds(message.Date).ToUniversalTime();
 
-            await MessagesRepository.CreateMessage(new TgsVoiceMessage
+            await MessagesRepository.CreateMessageAsync(new TgsVoiceMessage
             {
                 Id = message.Id,
                 ChatId = message.ChatId,
@@ -59,7 +59,7 @@ namespace TgSeeker.EventHandlers.Messages
                 }
             });
 
-            await MessagesRepository.DeleteMessage(voiceMessage.Id);
+            await MessagesRepository.DeleteMessageAsync(voiceMessage.Id);
 
             File.Delete(filePath);
         }
