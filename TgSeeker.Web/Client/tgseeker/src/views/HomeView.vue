@@ -11,7 +11,6 @@
 			Running
 		</span>
 		<span v-else-if="serviceState == 2" class="badge text-bg-danger app-status">Bad configuration</span>
-		<span v-else-if="serviceState == 3" class="badge text-bg-warning app-status">Telegram authentication required</span>
 		<span v-else class="badge text-bg-primary app-status">
 			<div class="spinner-border spinner-border-sm text-light" role="status">
 				<span class="visually-hidden">Loading...</span>
@@ -37,6 +36,8 @@
 			<div class="text-secondary">User id</div>
 		</div>
 	</div>
+	<span v-else-if="serviceState == 1" class="badge text-bg-warning app-status">Sign in to your Telegram account</span>
+	
 	<div class="d-grid gap-2 mt-2">
 
 		<a v-if="serviceState != 1" role="button" 

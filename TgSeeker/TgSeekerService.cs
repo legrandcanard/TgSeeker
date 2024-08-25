@@ -281,8 +281,7 @@ namespace TgSeeker
         {
             Idle,
             Running,
-            BadConfiguration,
-            AuthRequired
+            BadConfiguration   
         }
 
     }
