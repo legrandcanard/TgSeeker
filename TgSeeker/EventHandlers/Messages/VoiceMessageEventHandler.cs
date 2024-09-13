@@ -3,7 +3,7 @@ using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Persistent.Entities;
 using static TdLib.TdApi.InputFile;
 using TgSeeker.Util;
-using TgSeeker.EventHandlers.Expections;
+using TgSeeker.EventHandlers.Exceptions;
 
 namespace TgSeeker.EventHandlers.Messages
 {

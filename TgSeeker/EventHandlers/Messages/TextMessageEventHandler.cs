@@ -1,5 +1,5 @@
 ﻿using TdLib;
-using TgSeeker.EventHandlers.Expections;
+using TgSeeker.EventHandlers.Exceptions;
 using TgSeeker.Persistent.Entities;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Util;
