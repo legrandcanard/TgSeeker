@@ -9,9 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="cache\**" />
     <Compile Remove="tdlib\**" />
+    <Content Remove="cache\**" />
     <Content Remove="tdlib\**" />
+    <EmbeddedResource Remove="cache\**" />
     <EmbeddedResource Remove="tdlib\**" />
+    <None Remove="cache\**" />
     <None Remove="tdlib\**" />
   </ItemGroup>
 

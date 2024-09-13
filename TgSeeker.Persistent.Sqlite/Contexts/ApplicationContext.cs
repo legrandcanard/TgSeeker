@@ -24,6 +24,7 @@ namespace TgSeeker.Persistent.Contexts
 
             modelBuilder.Entity<TgsTextMessage>().HasBaseType<TgsMessage>();
             modelBuilder.Entity<TgsVoiceMessage>().HasBaseType<TgsMessage>();
+            modelBuilder.Entity<TgsVideoNoteMessage>().HasBaseType<TgsMessage>();
 
             modelBuilder.Entity<Option>(entity =>
             {

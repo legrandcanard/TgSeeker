@@ -24,6 +24,9 @@ namespace TgSeeker
         public AuthStates AuthorizationState { get; protected set; }
         public User? CurrentUser { get; protected set; }
 
+        private event EventHandler<UpdateMessageSendSucceeded> MessageSendSucceeded;
+        private event EventHandler<UpdateMessageSendFailed> MessageSendFailed;
+
         public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository, ITgsServiceLogger? logger = null)
         {
             _messagesRepository = messagesRepository;
@@ -75,6 +78,14 @@ namespace TgSeeker
                 {
                     await HandleDeleteMessagesAsync(updateDeleteMessages);
                 }
+                else if (e is TdApi.Update.UpdateMessageSendSucceeded updateMessageSendSucceeded)
+                {
+                    MessageSendSucceeded?.Invoke(this, updateMessageSendSucceeded);
+                }
+                else if (e is TdApi.Update.UpdateMessageSendFailed updateMessageSendFailed)
+                {
+                    MessageSendFailed?.Invoke(this, updateMessageSendFailed);
+                }
             }
             catch (Exception ex)
             {
@@ -101,13 +112,17 @@ namespace TgSeeker
 
             await EnsureServiceReadyAsync();
 
-            if (updateNewMessage.Message.Content is MessageVoiceNote)
+            if (message.Content is MessageVoiceNote)
             {
-                await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(updateNewMessage.Message);
+                await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
             }
-            else if (updateNewMessage.Message.Content is MessageText) // text
+            else if (message.Content is MessageText)
             {
-                await new TextMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(updateNewMessage.Message);
+                await new TextMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
+            }
+            else if (message.Content is MessageVideoNote)
+            {
+                await new VideoNoteMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
             }
             else
             {
@@ -144,6 +159,27 @@ namespace TgSeeker
                 else if (message is TgsTextMessage textMessage)
                 {
                     await new TextMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(textMessage);
+                }
+                else if (message is TgsVideoNoteMessage videoNoteMessage)
+                {
+                    var handler = new VideoNoteMessageEventHandler(options, _client, _messagesRepository);
+                    
+                    //MessageSendSucceeded += (_, e) =>
+                    //{
+                    //    if (e.Message.Id == videoNoteMessage.Id)
+                    //    {
+
+                    //    }
+                    //};
+                    //MessageSendFailed += (_, e) =>
+                    //{
+                    //    if (e.Message.Id == videoNoteMessage.Id)
+                    //    {
+
+                    //    }
+                    //};
+
+                    await handler.HandleDeleteAsync(videoNoteMessage);
                 }
             }
         }
