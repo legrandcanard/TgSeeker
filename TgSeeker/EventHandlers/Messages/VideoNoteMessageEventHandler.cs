@@ -11,7 +11,6 @@ namespace TgSeeker.EventHandlers.Messages
         : TgsMessageEventHandler(options, client, messagesRepository)
     {
         private const string VideoNoteDir = "videoNote";
-        private const string VideoNoteThumbnailDir = "videoNoteThumb";
 
         public async Task HandleCreateAsync(TdApi.Message message) 
         {
@@ -21,10 +20,7 @@ namespace TgSeeker.EventHandlers.Messages
 
             string localFileId = file.Remote.UniqueId;
             await FileCacheManager.CacheFileAsync(file.Local.Path, VideoNoteDir, localFileId);
-
-            string thumbnailLocalFileId = videoNoteMsg.VideoNote.Thumbnail.File.Remote.UniqueId;
-            await FileCacheManager.CacheFileAsync(file.Local.Path, VideoNoteThumbnailDir, thumbnailLocalFileId);
-            
+                        
             await MessagesRepository.CreateMessageAsync(new TgsVideoNoteMessage
             {
                 Id = message.Id,
