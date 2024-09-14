@@ -35,22 +35,11 @@ namespace TgSeeker.EventHandlers.Messages
                 Duration = videoNoteMsg.VideoNote.Duration,
                 Length = videoNoteMsg.VideoNote.Length,
                 Waveform = videoNoteMsg.VideoNote.Waveform,
-                LocalFileId = localFileId,
-
-                //// Minithumbnail
-                //MinithumbnailData = videoNoteMsg.VideoNote.Minithumbnail.Data,
-                //MinithumbnailHeight = videoNoteMsg.VideoNote.Minithumbnail.Height,
-                //MinithumbnailWidth = videoNoteMsg.VideoNote.Minithumbnail.Width,
-                
-                //// Thumbnail
-                //ThumbnailFormat = videoNoteMsg.VideoNote.Thumbnail.Format.DataType,
-                //ThumbnailHeight = videoNoteMsg.VideoNote.Thumbnail.Height,
-                //ThumbnailWidth = videoNoteMsg.VideoNote.Thumbnail.Width,
-                //ThumbnailLocalFileId = thumbnailLocalFileId
+                LocalFileId = localFileId
             });
         }
 
-        public async Task HandleDeleteAsync(TgsVideoNoteMessage videoNoteMessage) 
+        public async Task<TdApi.Message> HandleDeleteAsync(TgsVideoNoteMessage videoNoteMessage) 
         {
             var fromUser = await Client.GetUserAsync(videoNoteMessage.ChatId);
 
@@ -59,19 +48,20 @@ namespace TgSeeker.EventHandlers.Messages
                 Text = new TdApi.FormattedText { Text = TgsTextHelper.GetMessageDeletedTitle(fromUser) }
             });
 
-            await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVideoNote
+            return await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVideoNote
             {
                 Duration = videoNoteMessage.Duration,
                 VideoNote = new InputFileLocal
                 {
                     Path = FileCacheManager.GetFullFilePath(VideoNoteDir, videoNoteMessage.LocalFileId),
                 }
-            });
+            });   
+        }
 
-            await MessagesRepository.DeleteMessageAsync(videoNoteMessage.Id);
-
-            //FileCacheManager.Purge(VideoNoteDir, videoNoteMessage.LocalFileId);
-            //FileCacheManager.Purge(VideoNoteThumbnailDir, videoNoteMessage.ThumbnailLocalFileId);
+        public async Task HandleMessageCopySentCompleteAsync(TdApi.Message message, TgsVideoNoteMessage sourceMessage)
+        {
+            FileCacheManager.Purge(VideoNoteDir, sourceMessage.LocalFileId);
+            await MessagesRepository.DeleteMessageAsync(sourceMessage.Id);
         }
     }
 }

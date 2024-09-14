@@ -19,13 +19,11 @@ namespace TgSeeker
         private int _apiId;
         private string _apiHash;
         private bool _isServiceReady = false;
+        private Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)> _pendingMessages = new Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)>();
 
         public ServiceStates ServiceState { get; protected set; }
         public AuthStates AuthorizationState { get; protected set; }
         public User? CurrentUser { get; protected set; }
-
-        private event EventHandler<UpdateMessageSendSucceeded> MessageSendSucceeded;
-        private event EventHandler<UpdateMessageSendFailed> MessageSendFailed;
 
         public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository, ITgsServiceLogger? logger = null)
         {
@@ -80,11 +78,11 @@ namespace TgSeeker
                 }
                 else if (e is TdApi.Update.UpdateMessageSendSucceeded updateMessageSendSucceeded)
                 {
-                    MessageSendSucceeded?.Invoke(this, updateMessageSendSucceeded);
+                    await HandleMessageSendSucceededAsync(updateMessageSendSucceeded);
                 }
                 else if (e is TdApi.Update.UpdateMessageSendFailed updateMessageSendFailed)
                 {
-                    MessageSendFailed?.Invoke(this, updateMessageSendFailed);
+                    await HandleMessageSendFailedAsync(updateMessageSendFailed);
                 }
             }
             catch (Exception ex)
@@ -162,26 +160,41 @@ namespace TgSeeker
                 }
                 else if (message is TgsVideoNoteMessage videoNoteMessage)
                 {
-                    var handler = new VideoNoteMessageEventHandler(options, _client, _messagesRepository);
-                    
-                    //MessageSendSucceeded += (_, e) =>
-                    //{
-                    //    if (e.Message.Id == videoNoteMessage.Id)
-                    //    {
-
-                    //    }
-                    //};
-                    //MessageSendFailed += (_, e) =>
-                    //{
-                    //    if (e.Message.Id == videoNoteMessage.Id)
-                    //    {
-
-                    //    }
-                    //};
-
-                    await handler.HandleDeleteAsync(videoNoteMessage);
+                    var pendingMessage = await new VideoNoteMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(videoNoteMessage);
+                    _pendingMessages.Add(pendingMessage.Id, (videoNoteMessage, pendingMessage));
                 }
             }
+        }
+
+        public async Task HandleMessageSendSucceededAsync(UpdateMessageSendSucceeded updateMessageSendSucceeded)
+        {
+            var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
+
+            if (updateMessageSendSucceeded.Message.Content is MessageVideoNote videoNoteMessage)
+            {
+                (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage) = _pendingMessages[updateMessageSendSucceeded.OldMessageId];
+                var cachedVideoNoteMessage = cachedSourceMessage as TgsVideoNoteMessage;            
+                try
+                {
+                    var handler = new VideoNoteMessageEventHandler(options, _client, _messagesRepository);
+                    await handler.HandleMessageCopySentCompleteAsync(updateMessageSendSucceeded.Message, cachedVideoNoteMessage);
+                }
+                catch (Exception e)
+                {
+                    _logger?.LogError("Failed to purche cache for sended message.");
+                }
+                finally
+                {
+                    _pendingMessages.Remove(updateMessageSendSucceeded.OldMessageId);
+                }
+            }
+        }
+
+        public Task HandleMessageSendFailedAsync(UpdateMessageSendFailed updateMessageSendFailed)
+        {
+            _logger?.LogError("Failed to send message.");
+            _pendingMessages.Remove(updateMessageSendFailed.OldMessageId);
+            return Task.CompletedTask;
         }
 
         #endregion
