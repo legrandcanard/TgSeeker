@@ -253,6 +253,7 @@ namespace TgSeeker
             _client = null;
             ServiceState = ServiceStates.Idle;
             _isServiceReady = false;
+            _pendingMessages.Clear();
 
             return Task.CompletedTask;
         }
