@@ -10,8 +10,8 @@ namespace TgSeeker.EventHandlers.Messages
     public class VoiceMessageEventHandler(TgsEventHandlerOptions options, TdClient client, IMessagesRepository messagesRepository)
         : TgsMessageEventHandler(options, client, messagesRepository)
     {
-        public static readonly string voiceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "cache\\voice\\");
         public const string VoiceFileExtenion = "ogg";
+        private const string VoiceNoteDir = "voiceNote";
 
         public async Task HandleCreateAsync(TdApi.Message message)
         {
@@ -22,46 +22,42 @@ namespace TgSeeker.EventHandlers.Messages
 
             var file = await Client.DownloadFileAsync(voiceNoteMsg.VoiceNote.Voice.Id, priority: 3, limit: int.MaxValue, synchronous: true);
 
-            Directory.CreateDirectory(voiceDirPath);
-
-            using var newFileFs = File.Create(Path.Combine(voiceDirPath, $"{voiceDirPath + file.Remote.UniqueId}.{VoiceFileExtenion}"));
-            using var tdlibFileCacheFs = File.OpenRead(file.Local.Path);
-            tdlibFileCacheFs.CopyTo(newFileFs);
-
-            DateTime createdDate = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            createdDate = createdDate.AddSeconds(message.Date).ToUniversalTime();
+            string localFileId = file.Remote.UniqueId;
+            await FileCacheManager.CacheFileAsync(file.Local.Path, VoiceNoteDir, localFileId);
 
             await MessagesRepository.CreateMessageAsync(new TgsVoiceMessage
             {
                 Id = message.Id,
                 ChatId = message.ChatId,
-                CreateDate = createdDate,
+                CreateDate = message.GetCreationDate(),
                 LocalFileId = file.Remote.UniqueId,
                 Waveform = voiceNoteMsg.VoiceNote.Waveform,
                 Duration = voiceNoteMsg.VoiceNote.Duration,
             });
         }
 
-        public async Task HandleDeleteAsync(TgsVoiceMessage voiceMessage)
+        public async Task<TdApi.Message> HandleDeleteAsync(TgsVoiceMessage voiceMessage)
         {
             var fromUser = await Client.GetUserAsync(voiceMessage.ChatId);
 
-            string filePath = Path.Combine(voiceDirPath, $"{voiceMessage.LocalFileId}.{VoiceFileExtenion}");
+            string filePath = Path.Combine(VoiceNoteDir, $"{voiceMessage.LocalFileId}.{VoiceFileExtenion}");
 
-            await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
+            return await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageVoiceNote
             {
                 Waveform = voiceMessage.Waveform,
                 Duration = voiceMessage.Duration,
                 Caption = new TdApi.FormattedText { Text = TgsTextHelper.GetMessageDeletedTitle(fromUser) },
                 VoiceNote = new InputFileLocal
                 {
-                    Path = filePath
+                    Path = FileCacheManager.GetFullFilePath(VoiceNoteDir, voiceMessage.LocalFileId),
                 }
             });
+        }
 
-            await MessagesRepository.DeleteMessageAsync(voiceMessage.Id);
-
-            File.Delete(filePath);
+        public async Task HandleMessageCopySentCompleteAsync(TdApi.Message message, TgsVoiceMessage sourceMessage)
+        {
+            FileCacheManager.Purge(VoiceNoteDir, sourceMessage.LocalFileId);
+            await MessagesRepository.DeleteMessageAsync(sourceMessage.Id);
         }
     }
 }

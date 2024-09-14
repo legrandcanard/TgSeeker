@@ -20,7 +20,7 @@ namespace TgSeeker.EventHandlers.Messages
 
             string localFileId = file.Remote.UniqueId;
             await FileCacheManager.CacheFileAsync(file.Local.Path, VideoNoteDir, localFileId);
-                        
+            
             await MessagesRepository.CreateMessageAsync(new TgsVideoNoteMessage
             {
                 Id = message.Id,
@@ -51,7 +51,7 @@ namespace TgSeeker.EventHandlers.Messages
                 {
                     Path = FileCacheManager.GetFullFilePath(VideoNoteDir, videoNoteMessage.LocalFileId),
                 }
-            });   
+            });
         }
 
         public async Task HandleMessageCopySentCompleteAsync(TdApi.Message message, TgsVideoNoteMessage sourceMessage)

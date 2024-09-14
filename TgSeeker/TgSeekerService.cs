@@ -152,7 +152,8 @@ namespace TgSeeker
 
                 if (message is TgsVoiceMessage voiceMessage)
                 {
-                    await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(voiceMessage);
+                    var pendingMessage = await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(voiceMessage);
+                    _pendingMessages.Add(pendingMessage.Id, (voiceMessage, pendingMessage));
                 }
                 else if (message is TgsTextMessage textMessage)
                 {
@@ -170,23 +171,27 @@ namespace TgSeeker
         {
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
 
-            if (updateMessageSendSucceeded.Message.Content is MessageVideoNote videoNoteMessage)
+            (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage) = _pendingMessages[updateMessageSendSucceeded.OldMessageId];
+            try
             {
-                (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage) = _pendingMessages[updateMessageSendSucceeded.OldMessageId];
-                var cachedVideoNoteMessage = cachedSourceMessage as TgsVideoNoteMessage;            
-                try
+                if (cachedSourceMessage is TgsVideoNoteMessage cachedVideoNoteMessage)
                 {
                     var handler = new VideoNoteMessageEventHandler(options, _client, _messagesRepository);
                     await handler.HandleMessageCopySentCompleteAsync(updateMessageSendSucceeded.Message, cachedVideoNoteMessage);
                 }
-                catch (Exception e)
+                else if (cachedSourceMessage is TgsVoiceMessage cachedVoiceMessage)
                 {
-                    _logger?.LogError("Failed to purche cache for sended message.");
+                    var handler = new VoiceMessageEventHandler(options, _client, _messagesRepository);
+                    await handler.HandleMessageCopySentCompleteAsync(updateMessageSendSucceeded.Message, cachedVoiceMessage);
                 }
-                finally
-                {
-                    _pendingMessages.Remove(updateMessageSendSucceeded.OldMessageId);
-                }
+            }
+            catch (Exception e)
+            {
+                _logger?.LogError("Failed to purche cache for sended message.");
+            }
+            finally
+            {
+                _pendingMessages.Remove(updateMessageSendSucceeded.OldMessageId);
             }
         }
 
