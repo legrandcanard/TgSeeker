@@ -1,6 +1,5 @@
 ﻿
 using System.Diagnostics;
-using TgSeeker.Persistent.Entities.Interfaces;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Util;
 
@@ -19,15 +18,19 @@ namespace TgSeeker
 
         public async Task ExecuteAsync()
         {
-            //Debug.WriteLine("TgsCacheCleanJob started");
-            //var messages = await _messagesRepository.GetMessagesOlderThenAsync(DateTime.UtcNow.AddMinutes(-5));
-            //foreach (var message in messages)
-            //{
-            //    if (message is IHasResource messageWithLocalFile)
-            //    {
-                    
-            //    }
-            //}
+            Debug.WriteLine("TgsCacheCleanJob started");
+            var messages = await _messagesRepository.GetMessagesOlderThenAsync(DateTime.UtcNow.AddDays(-5));
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            foreach (var message in messages)
+            {
+                await TgsMessageEvent.For(message, null, _messagesRepository, null).RemoveCacheForMessageAsync(message);
+            }
+
+            sw.Stop();
+            Debug.WriteLine($"TgsCacheCleanJob took {sw.Elapsed.TotalMilliseconds} ms");
         }
     }
 }
