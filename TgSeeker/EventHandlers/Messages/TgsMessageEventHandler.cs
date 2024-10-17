@@ -1,7 +1,9 @@
 ﻿
 using TdLib;
+using TgSeeker.Persistent.Entities;
 using TgSeeker.Persistent.Repositiories;
 using TgSeeker.Util;
+using static TdLib.TdApi;
 
 namespace TgSeeker.EventHandlers.Messages
 {
@@ -17,5 +19,10 @@ namespace TgSeeker.EventHandlers.Messages
             Client = client;
             MessagesRepository = messagesRepository;
         }
+
+        public virtual Task HandleMessageReceivedAsync(TdLib.TdApi.Message message) { return Task.CompletedTask; }
+        public abstract Task<Message> HandleMessageDeletedAsync(TgsMessage tgsMessage);
+        public virtual Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage) { return Task.CompletedTask; }
+        public virtual Task HandleMessageSendFailAsync(TgsMessage tgsMessage) { return Task.CompletedTask; }
     }
 }

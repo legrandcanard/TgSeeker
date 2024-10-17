@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hangfire.Core" Version="1.8.14" />
+    <PackageReference Include="Hangfire.InMemory" Version="1.0.0" />
     <PackageReference Include="TDLib" Version="1.8.29" />
     <PackageReference Include="tdlib.native" Version="1.8.29" />
   </ItemGroup>
@@ -29,6 +31,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <LastGenOutput>TgsLocale.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="EventHandlers\Interfaces\" />
   </ItemGroup>
 
 </Project>

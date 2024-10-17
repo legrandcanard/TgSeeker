@@ -8,6 +8,7 @@ using TgSeeker.Web.Data;
 using TgSeeker.Web.Areas.Identity.Data;
 using Microsoft.AspNetCore.Diagnostics;
 using TgSeeker.Persistent.Contexts;
+using Hangfire;
 
 namespace TgSeeker.Web
 {
@@ -44,6 +45,7 @@ namespace TgSeeker.Web
             }
 
             builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
+            builder.Services.AddScoped<IMessagesRepository, MessagesRepository>();
 
             builder.Services.ConfigureApplicationCookie(options =>
             {
@@ -63,6 +65,9 @@ namespace TgSeeker.Web
                     return Task.CompletedTask;
                 };
             });
+
+            builder.Services.AddHangfire(options => options.UseInMemoryStorage());
+            builder.Services.AddHangfireServer();
 
             var app = builder.Build();
 
@@ -116,6 +121,10 @@ namespace TgSeeker.Web
 
                     await userManager.CreateAsync(user);
                 }
+
+                app.Services.GetService<IRecurringJobManager>().AddOrUpdate(TgsCacheCleanJob.JobKey,
+                    () => new TgsCacheCleanJob(app.Services.CreateScope().ServiceProvider.GetService<IMessagesRepository>()).ExecuteAsync(),
+                    Cron.Minutely());
             }
 
             app.Run();

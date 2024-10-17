@@ -34,10 +34,8 @@ namespace TgSeeker.Persistent.Repositiories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<TgsMessage[]> GetOldMessagesAsync()
+        public async Task<TgsMessage[]> GetMessagesOlderThenAsync(DateTime date)
         {
-            var date = DateTime.UtcNow.AddDays(-30);
-
             return await _context.Messages
                 .Where(message => message.CreateDate <= date)
                 .AsNoTracking()

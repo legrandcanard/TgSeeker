@@ -7,6 +7,6 @@ namespace TgSeeker.Persistent.Repositiories
         Task<TgsMessage[]> GetMessagesAsync(long chatId, long[] messageIds);
         Task CreateMessageAsync(TgsMessage message);
         Task DeleteMessageAsync(long messageId);
-        Task<TgsMessage[]> GetOldMessagesAsync();
+        Task<TgsMessage[]> GetMessagesOlderThenAsync(DateTime date);
     }
 }

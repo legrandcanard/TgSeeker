@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using TgSeeker.Persistent.Entities.Interfaces;
 
 namespace TgSeeker.Persistent.Entities
 {
-    public class TgsVoiceMessage : TgsMessage
+    public class TgsVoiceMessage : TgsMessage, IHasResource
     {
         public byte[] Waveform { get; set; }
         public int Duration { get; set; }

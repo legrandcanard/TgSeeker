@@ -7,6 +7,9 @@ using static TdLib.TdApi;
 using static TdLib.TdApi.AuthorizationState;
 using static TdLib.TdApi.MessageContent;
 using static TdLib.TdApi.Update;
+using Hangfire;
+using System.Diagnostics;
+using TgSeeker.Persistent.Entities.Interfaces;
 
 namespace TgSeeker
 {
@@ -110,22 +113,8 @@ namespace TgSeeker
 
             await EnsureServiceReadyAsync();
 
-            if (message.Content is MessageVoiceNote)
-            {
-                await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
-            }
-            else if (message.Content is MessageText)
-            {
-                await new TextMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
-            }
-            else if (message.Content is MessageVideoNote)
-            {
-                await new VideoNoteMessageEventHandler(options, _client, _messagesRepository).HandleCreateAsync(message);
-            }
-            else
-            {
-                //todo: implement other message types
-            }
+            var handler = TgsMessageEvent.For(message, options, _messagesRepository, _client);
+            await handler.HandleMessageReceivedAsync(message);
         }
 
         public async Task HandleDeleteMessagesAsync(UpdateDeleteMessages updateDeleteMessages)
@@ -150,19 +139,13 @@ namespace TgSeeker
                     continue;
                 }
 
-                if (message is TgsVoiceMessage voiceMessage)
+                var handler = TgsMessageEvent.For(message, options, _messagesRepository, _client);
+                var pendingMessage = await handler.HandleMessageDeletedAsync(message);
+
+                // Message resources will be disposed after sending complete
+                if (message is IHasResource resourceMessage)
                 {
-                    var pendingMessage = await new VoiceMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(voiceMessage);
-                    _pendingMessages.Add(pendingMessage.Id, (voiceMessage, pendingMessage));
-                }
-                else if (message is TgsTextMessage textMessage)
-                {
-                    await new TextMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(textMessage);
-                }
-                else if (message is TgsVideoNoteMessage videoNoteMessage)
-                {
-                    var pendingMessage = await new VideoNoteMessageEventHandler(options, _client, _messagesRepository).HandleDeleteAsync(videoNoteMessage);
-                    _pendingMessages.Add(pendingMessage.Id, (videoNoteMessage, pendingMessage));
+                    _pendingMessages.Add(pendingMessage.Id, (message, pendingMessage));
                 }
             }
         }
@@ -174,20 +157,12 @@ namespace TgSeeker
             (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage) = _pendingMessages[updateMessageSendSucceeded.OldMessageId];
             try
             {
-                if (cachedSourceMessage is TgsVideoNoteMessage cachedVideoNoteMessage)
-                {
-                    var handler = new VideoNoteMessageEventHandler(options, _client, _messagesRepository);
-                    await handler.HandleMessageCopySentCompleteAsync(updateMessageSendSucceeded.Message, cachedVideoNoteMessage);
-                }
-                else if (cachedSourceMessage is TgsVoiceMessage cachedVoiceMessage)
-                {
-                    var handler = new VoiceMessageEventHandler(options, _client, _messagesRepository);
-                    await handler.HandleMessageCopySentCompleteAsync(updateMessageSendSucceeded.Message, cachedVoiceMessage);
-                }
+                var handler = TgsMessageEvent.For(cachedSourceMessage, options, _messagesRepository, _client);
+                await handler.HandleMessageSendSuccessAsync(cachedSourceMessage);
             }
             catch (Exception e)
             {
-                _logger?.LogError("Failed to purche cache for sended message.");
+                _logger?.LogError("Failed to purge cache for sended message.");
             }
             finally
             {
@@ -245,6 +220,10 @@ namespace TgSeeker
 
             _client = new TdClient();
             _client.UpdateReceived += HandleUpdate;
+
+            Debug.WriteLine("rj deployed");
+
+
             ServiceState = ServiceStates.Running;
         }
 

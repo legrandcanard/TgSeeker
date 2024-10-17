@@ -10,7 +10,7 @@ namespace TgSeeker.EventHandlers.Messages
     internal class TextMessageEventHandler(TgsEventHandlerOptions options, TdClient client, IMessagesRepository messagesRepository) 
         : TgsMessageEventHandler(options, client, messagesRepository)
     {
-        public async Task HandleCreateAsync(TdApi.Message message)
+        public override async Task HandleMessageReceivedAsync(TdApi.Message message)
         {
             if (message.Content is not MessageContent.MessageText textMessage)
                 throw new WrongMessageTypeException();
@@ -27,11 +27,13 @@ namespace TgSeeker.EventHandlers.Messages
             });
         }
 
-        public async Task HandleDeleteAsync(TgsTextMessage textMessage)
+        public override async Task<Message> HandleMessageDeletedAsync(TgsMessage tgsMessage)
         {
+            var textMessage = tgsMessage as TgsTextMessage ?? throw new WrongMessageTypeException();
+
             var fromUser = await Client.GetUserAsync(textMessage.ChatId);
 
-            await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageText
+            var message = await Client.SendMessageAsync(Options.CurrentUser.Id, inputMessageContent: new TdApi.InputMessageContent.InputMessageText
             {
                 Text = new TdApi.FormattedText
                 {
@@ -39,6 +41,13 @@ namespace TgSeeker.EventHandlers.Messages
                 }
             });
             await MessagesRepository.DeleteMessageAsync(textMessage.Id);
+
+            return message;
+        }
+
+        public override async Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
+        {
+            await MessagesRepository.DeleteMessageAsync(tgsMessage.Id);
         }
     }
 }

@@ -11,9 +11,9 @@ namespace TgSeeker.EventHandlers.Messages
         : TgsMessageEventHandler(options, client, messagesRepository)
     {
         public const string VoiceFileExtenion = "ogg";
-        private const string VoiceNoteDir = "voiceNote";
+        private const string VoiceNoteDir = TgsContants.VoiceNoteMessageFsCacheDirName;
 
-        public async Task HandleCreateAsync(TdApi.Message message)
+        public override async Task HandleMessageReceivedAsync(TdApi.Message message)
         {
             if (message.Content is not TdApi.MessageContent.MessageVoiceNote textMessage)
                 throw new WrongMessageTypeException();
@@ -36,8 +36,10 @@ namespace TgSeeker.EventHandlers.Messages
             });
         }
 
-        public async Task<TdApi.Message> HandleDeleteAsync(TgsVoiceMessage voiceMessage)
+        public override async Task<TdApi.Message> HandleMessageDeletedAsync(TgsMessage tgsMessage)
         {
+            var voiceMessage = tgsMessage as TgsVoiceMessage ?? throw new WrongMessageTypeException();
+
             var fromUser = await Client.GetUserAsync(voiceMessage.ChatId);
 
             string filePath = Path.Combine(VoiceNoteDir, $"{voiceMessage.LocalFileId}.{VoiceFileExtenion}");
@@ -54,10 +56,12 @@ namespace TgSeeker.EventHandlers.Messages
             });
         }
 
-        public async Task HandleMessageCopySentCompleteAsync(TdApi.Message message, TgsVoiceMessage sourceMessage)
+        public override async Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
         {
-            FileCacheManager.Purge(VoiceNoteDir, sourceMessage.LocalFileId);
-            await MessagesRepository.DeleteMessageAsync(sourceMessage.Id);
+            var voiceMessage = tgsMessage as TgsVoiceMessage ?? throw new WrongMessageTypeException();
+
+            FileCacheManager.Purge(VoiceNoteDir, voiceMessage.LocalFileId);
+            await MessagesRepository.DeleteMessageAsync(voiceMessage.Id);
         }
     }
 }
