@@ -8,8 +8,7 @@ using static TdLib.TdApi;
 
 namespace TgSeeker.EventHandlers.Messages
 {
-    public class VideoNoteMessageEventHandler
-        : TgsMessageEventHandler
+    public class VideoNoteMessageEventHandler : TgsMessageEventHandler
     {
         readonly TgsEventHandlerOptions _options;
         readonly TdClient _client;
@@ -18,7 +17,7 @@ namespace TgSeeker.EventHandlers.Messages
         private const string VideoNoteDir = TgsContants.VideoNoteMessageFsCacheDirName;
 
         public VideoNoteMessageEventHandler(
-            TgsEventHandlerOptions options, 
+            TgsEventHandlerOptions options,
             TdClient client, 
             IMessagesRepository messagesRepository)
             : base(options, client, messagesRepository)
@@ -26,6 +25,14 @@ namespace TgSeeker.EventHandlers.Messages
             _options = options;
             _client = client;
             _messagesRepository = messagesRepository;
+        }
+
+        public override async Task RemoveCacheForMessageAsync(TgsMessage tgsMessage)
+        {
+            var videoNoteMessage = tgsMessage as TgsVideoNoteMessage ?? throw new WrongMessageTypeException();
+
+            FileCacheManager.Purge(VideoNoteDir, videoNoteMessage.LocalFileId);
+            await MessagesRepository.DeleteMessageAsync(videoNoteMessage.Id);
         }
 
         public override async Task HandleMessageReceivedAsync(Message message)
@@ -72,12 +79,7 @@ namespace TgSeeker.EventHandlers.Messages
             });
         }
 
-        public override async Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
-        {
-            var videoNoteMessage = tgsMessage as TgsVideoNoteMessage ?? throw new WrongMessageTypeException();
-
-            FileCacheManager.Purge(VideoNoteDir, videoNoteMessage.LocalFileId);
-            await MessagesRepository.DeleteMessageAsync(videoNoteMessage.Id);
-        }
+        public override Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
+            => RemoveCacheForMessageAsync(tgsMessage);
     }
 }

@@ -10,6 +10,9 @@ namespace TgSeeker.EventHandlers.Messages
     internal class TextMessageEventHandler(TgsEventHandlerOptions options, TdClient client, IMessagesRepository messagesRepository) 
         : TgsMessageEventHandler(options, client, messagesRepository)
     {
+        public override Task RemoveCacheForMessageAsync(TgsMessage tgsMessage)
+            => MessagesRepository.DeleteMessageAsync(tgsMessage.Id);
+
         public override async Task HandleMessageReceivedAsync(TdApi.Message message)
         {
             if (message.Content is not MessageContent.MessageText textMessage)
@@ -45,9 +48,7 @@ namespace TgSeeker.EventHandlers.Messages
             return message;
         }
 
-        public override async Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
-        {
-            await MessagesRepository.DeleteMessageAsync(tgsMessage.Id);
-        }
+        public override Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
+            => RemoveCacheForMessageAsync(tgsMessage);
     }
 }

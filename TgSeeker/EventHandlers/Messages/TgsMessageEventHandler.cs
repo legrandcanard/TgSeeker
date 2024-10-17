@@ -20,6 +20,7 @@ namespace TgSeeker.EventHandlers.Messages
             MessagesRepository = messagesRepository;
         }
 
+        public abstract Task RemoveCacheForMessageAsync(TgsMessage tgsMessage);
         public virtual Task HandleMessageReceivedAsync(TdLib.TdApi.Message message) { return Task.CompletedTask; }
         public abstract Task<Message> HandleMessageDeletedAsync(TgsMessage tgsMessage);
         public virtual Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage) { return Task.CompletedTask; }

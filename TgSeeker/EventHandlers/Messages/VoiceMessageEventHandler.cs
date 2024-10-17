@@ -13,6 +13,14 @@ namespace TgSeeker.EventHandlers.Messages
         public const string VoiceFileExtenion = "ogg";
         private const string VoiceNoteDir = TgsContants.VoiceNoteMessageFsCacheDirName;
 
+        public override async Task RemoveCacheForMessageAsync(TgsMessage tgsMessage)
+        {
+            var voiceMessage = tgsMessage as TgsVoiceMessage ?? throw new WrongMessageTypeException();
+
+            FileCacheManager.Purge(VoiceNoteDir, voiceMessage.LocalFileId);
+            await MessagesRepository.DeleteMessageAsync(voiceMessage.Id);
+        }
+
         public override async Task HandleMessageReceivedAsync(TdApi.Message message)
         {
             if (message.Content is not TdApi.MessageContent.MessageVoiceNote textMessage)
@@ -56,12 +64,7 @@ namespace TgSeeker.EventHandlers.Messages
             });
         }
 
-        public override async Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
-        {
-            var voiceMessage = tgsMessage as TgsVoiceMessage ?? throw new WrongMessageTypeException();
-
-            FileCacheManager.Purge(VoiceNoteDir, voiceMessage.LocalFileId);
-            await MessagesRepository.DeleteMessageAsync(voiceMessage.Id);
-        }
+        public override Task HandleMessageSendSuccessAsync(TgsMessage tgsMessage)
+            => RemoveCacheForMessageAsync(tgsMessage);
     }
 }
