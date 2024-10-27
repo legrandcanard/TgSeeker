@@ -119,7 +119,7 @@ namespace TgSeeker
             if (message.IsChannelPost || message.IsTopicMessage || message.ChatId < 0)
                 return;
 
-            _logger?.LogInfo("New message.");
+            _logger?.LogInfo($"Tgs: new message event (id: {updateNewMessage.Message.Id}).");
 
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
 
@@ -139,6 +139,8 @@ namespace TgSeeker
 
             if (updateDeleteMessages.ChatId == CurrentUser.Id)
                 return;
+
+            _logger?.LogInfo($"Tgs: messages delete event (ids: {updateDeleteMessages.MessageIds}).");
 
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
             
