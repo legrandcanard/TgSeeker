@@ -168,6 +168,9 @@ namespace TgSeeker
         {
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
 
+            if (!_pendingMessages.ContainsKey(updateMessageSendSucceeded.OldMessageId))
+                return;
+
             (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage) = _pendingMessages[updateMessageSendSucceeded.OldMessageId];
             try
             {
