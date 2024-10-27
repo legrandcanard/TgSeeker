@@ -45,24 +45,34 @@ namespace TgSeeker
                 {
                     if (updateAuthState.AuthorizationState is AuthorizationState.AuthorizationStateWaitTdlibParameters)
                     {
+                        _logger?.LogInfo("TdLib event: AuthorizationStateWaitTdlibParameters.");
+
                         await SetTdlibParamsAsync();
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationState.AuthorizationStateReady)
                     {
+                        _logger?.LogInfo("TdLib event: AuthorizationStateReady.");
+
                         CurrentUser = await _client.GetMeAsync();
                         ServiceState = ServiceStates.Running;
                         AuthorizationState = AuthStates.AuthComplete;
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationState.AuthorizationStateWaitCode)
                     {
+                        _logger?.LogInfo("TdLib event: AuthorizationStateWaitCode.");
+
                         AuthorizationState = AuthStates.AuthCodeValidationPending;
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationStateWaitPhoneNumber)
                     {
+                        _logger?.LogInfo("TdLib event: AuthorizationStateWaitPhoneNumber.");
+
                         AuthorizationState = AuthStates.AuthRequired;
                     }
                     else if (updateAuthState.AuthorizationState is AuthorizationStateClosed)
                     {
+                        _logger?.LogInfo("TdLib event: AuthorizationStateClosed.");
+
                         // Restart instance
                         Task.Run(async delegate
                         {
@@ -108,6 +118,8 @@ namespace TgSeeker
 
             if (message.IsChannelPost || message.IsTopicMessage || message.ChatId < 0)
                 return;
+
+            _logger?.LogInfo("New message.");
 
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
 
@@ -219,10 +231,10 @@ namespace TgSeeker
             }
 
             _client = new TdClient();
+            _client.SetLogVerbosityLevelAsync(0);
             _client.UpdateReceived += HandleUpdate;
 
-            Debug.WriteLine("rj deployed");
-
+            _logger?.LogInfo("TgSeekerService has been started.");
 
             ServiceState = ServiceStates.Running;
         }
@@ -238,6 +250,7 @@ namespace TgSeeker
             ServiceState = ServiceStates.Idle;
             _isServiceReady = false;
             _pendingMessages.Clear();
+            _logger?.LogInfo("TgSeekerService has been stopped.");
 
             return Task.CompletedTask;
         }
@@ -277,14 +290,19 @@ namespace TgSeeker
             if (_isServiceReady)
                 return;
 
+            _logger?.LogInfo("Chats loading started...");
+
             // This will cache this chat for the client
             await _client.LoadChatsAsync(limit: int.MaxValue);
+
+            _logger?.LogInfo("Chats loading complete.");
 
             _isServiceReady = true;
         }
 
         private async Task SetTdlibParamsAsync()
         {
+            _logger?.LogInfo("Settings tdlib params...");
             try
             {
                 await _client.SetTdlibParametersAsync(
