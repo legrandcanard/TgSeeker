@@ -140,7 +140,7 @@ namespace TgSeeker
             if (updateDeleteMessages.ChatId == CurrentUser.Id)
                 return;
 
-            _logger?.LogInfo($"Tgs: messages delete event (ids: {updateDeleteMessages.MessageIds}).");
+            _logger?.LogInfo($"Tgs: messages delete event (ids: { string.Join(", ", updateDeleteMessages.MessageIds)}).");
 
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
             
