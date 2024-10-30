@@ -15,14 +15,22 @@ namespace TgSeeker
 {
     public class TgSeekerService : IDisposable
     {
-        private TdClient? _client;
+        #region Dependencies
         private readonly IMessagesRepository _messagesRepository;
         private readonly ISettingsRepository _settingsRepository;
         private readonly ITgsServiceLogger? _logger;
-        private int _apiId;
-        private string _apiHash;
+        #endregion
+
+        private TdClient? _client;
+        private int _apiId = default;
+        private string _apiHash = string.Empty;
         private bool _isServiceReady = false;
-        private Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)> _pendingMessages = new Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)>();
+
+        /// <summary>
+        /// Collecting new messages whose sending request has not yet been completed.
+        /// </summary>
+        private Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)> _pendingMessages 
+            = new Dictionary<long, (TgsMessage cachedSourceMessage, TdApi.Message pendingMessage)>();
 
         public ServiceStates ServiceState { get; protected set; }
         public AuthStates AuthorizationState { get; protected set; }
@@ -106,7 +114,7 @@ namespace TgSeeker
 
         #region Messages
 
-        public async Task HandleNewMessageAsync(UpdateNewMessage updateNewMessage)
+        protected async Task HandleNewMessageAsync(UpdateNewMessage updateNewMessage)
         {
             if (CurrentUser == null)
                 throw new ArgumentException("CurrentUser is not set");
@@ -129,7 +137,7 @@ namespace TgSeeker
             await handler.HandleMessageReceivedAsync(message);
         }
 
-        public async Task HandleDeleteMessagesAsync(UpdateDeleteMessages updateDeleteMessages)
+        protected async Task HandleDeleteMessagesAsync(UpdateDeleteMessages updateDeleteMessages)
         {
             if (CurrentUser == null)
                 throw new ArgumentException("CurrentUser is not set");
@@ -164,7 +172,7 @@ namespace TgSeeker
             }
         }
 
-        public async Task HandleMessageSendSucceededAsync(UpdateMessageSendSucceeded updateMessageSendSucceeded)
+        protected async Task HandleMessageSendSucceededAsync(UpdateMessageSendSucceeded updateMessageSendSucceeded)
         {
             var options = new TgsEventHandlerOptions { CurrentUser = CurrentUser };
 
@@ -187,7 +195,7 @@ namespace TgSeeker
             }
         }
 
-        public Task HandleMessageSendFailedAsync(UpdateMessageSendFailed updateMessageSendFailed)
+        protected Task HandleMessageSendFailedAsync(UpdateMessageSendFailed updateMessageSendFailed)
         {
             _logger?.LogError("Failed to send message.");
             _pendingMessages.Remove(updateMessageSendFailed.OldMessageId);
@@ -197,17 +205,17 @@ namespace TgSeeker
         #endregion
 
         #region Auth
-        public async Task SendAuthenticationCodeToPhone(string phoneNumber)
+        protected async Task SendAuthenticationCodeToPhone(string phoneNumber)
         {
             await _client.SetAuthenticationPhoneNumberAsync(phoneNumber);
         }
 
-        public async Task CheckAuthenticationCodeAsync(string code)
+        protected async Task CheckAuthenticationCodeAsync(string code)
         {
             await _client.CheckAuthenticationCodeAsync(code);
         }
 
-        public async Task LogOut()
+        protected async Task LogOut()
         {
             await _client.LogOutAsync();
             CurrentUser = null;
