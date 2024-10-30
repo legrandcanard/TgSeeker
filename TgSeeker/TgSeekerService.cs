@@ -205,17 +205,17 @@ namespace TgSeeker
         #endregion
 
         #region Auth
-        protected async Task SendAuthenticationCodeToPhone(string phoneNumber)
+        public async Task SendAuthenticationCodeToPhone(string phoneNumber)
         {
             await _client.SetAuthenticationPhoneNumberAsync(phoneNumber);
         }
 
-        protected async Task CheckAuthenticationCodeAsync(string code)
+        public async Task CheckAuthenticationCodeAsync(string code)
         {
             await _client.CheckAuthenticationCodeAsync(code);
         }
 
-        protected async Task LogOut()
+        public async Task LogOut()
         {
             await _client.LogOutAsync();
             CurrentUser = null;
