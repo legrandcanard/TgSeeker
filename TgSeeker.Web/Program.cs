@@ -40,7 +40,7 @@ namespace TgSeeker.Web
             .AddEntityFrameworkStores<ApplicationIdentityContext>();
             
             {
-                var tgSeekerService = new TgSeekerHostedService(new MessagesRepository(new ApplicationContext()), new SettingsRepository(), new TgsLogger());
+                var tgSeekerService = new TgSeekerHostedService(new MessagesRepository(new ApplicationContext()), new SettingsRepository(), new TgsConsoleLogger());
                 builder.Services.AddSingleton<TgSeekerHostedService>(opts => tgSeekerService);
                 builder.Services.AddHostedService<TgSeekerHostedService>(opts => tgSeekerService);
             }
