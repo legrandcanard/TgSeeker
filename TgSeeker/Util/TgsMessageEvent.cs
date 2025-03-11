@@ -26,6 +26,7 @@ namespace TgSeeker.Util
                 MessageText textMessage => new TextMessageEventHandler(options, tdClient, messagesRepository),
                 MessageVoiceNote voiceMessage => new VoiceMessageEventHandler(options, tdClient, messagesRepository),
                 MessageVideoNote videoNoteMessage => new VideoNoteMessageEventHandler(options, tdClient, messagesRepository),
+                MessageSticker messageSticker => new StickerMessageEventHandler(options, tdClient, messagesRepository),
                 _ => throw new ArgumentOutOfRangeException($"Message not supported: {message.GetType()}.")
             };
         }
