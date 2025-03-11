@@ -76,5 +76,11 @@ export const store = reactive({
     },
     async changePassword(data) {
         return await post("/account/changePassword", data);
+    },
+
+    // Statistics
+    async getMetrics() {
+        const response = await client.get("/statistics");
+        return response.data;
     }
 })

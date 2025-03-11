@@ -45,6 +45,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TgSeeker.Persistent.Sqlite\TgSeeker.Persistent.Sqlite.csproj" />
+    <ProjectReference Include="..\TgSeeker.Statistics\TgSeeker.Statistics.csproj" />
     <ProjectReference Include="..\TgSeeker\TgSeeker.csproj" />
   </ItemGroup>
 

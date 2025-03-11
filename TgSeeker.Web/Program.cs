@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using TgSeeker.Persistent.Contexts;
 using Hangfire;
 using TgSeeker.Web.Util;
+using TgSeeker.Statistics;
 
 namespace TgSeeker.Web
 {
@@ -40,13 +41,16 @@ namespace TgSeeker.Web
             .AddEntityFrameworkStores<ApplicationIdentityContext>();
             
             {
-                var tgSeekerService = new TgSeekerHostedService(new MessagesRepository(new ApplicationContext()), new SettingsRepository(), new TgsConsoleLogger());
+                var tgSeekerService = new TgSeekerHostedService(
+                    new MessagesRepository(new ApplicationContext()), new SettingsRepository(), new MetricsReporter(new MetricsStorage()), new TgsConsoleLogger());
                 builder.Services.AddSingleton<TgSeekerHostedService>(opts => tgSeekerService);
                 builder.Services.AddHostedService<TgSeekerHostedService>(opts => tgSeekerService);
             }
 
             builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
             builder.Services.AddScoped<IMessagesRepository, MessagesRepository>();
+
+            builder.Services.AddSingleton<MetricsStorage>();
 
             builder.Services.ConfigureApplicationCookie(options =>
             {

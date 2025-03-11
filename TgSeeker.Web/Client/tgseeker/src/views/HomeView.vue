@@ -1,68 +1,72 @@
-<template>  
-<div class="main-panel">
-	<img :src="iconUrl" />
-	<div>
-		<span v-if="serviceState == -1" class="badge text-bg-danger app-status">Error</span>
-		<span v-else-if="serviceState == 0" class="badge text-bg-warning app-status">Idle</span>
-		<span v-else-if="serviceState == 1" class="badge text-bg-success app-status">
-			<div class="spinner-grow text-light loading-small" role="status">
-				<span class="visually-hidden">Loading...</span>
+<template>
+<div>
+	<div class="main-panel">
+		<img :src="iconUrl" />
+		<div>
+			<span v-if="serviceState == -1" class="badge text-bg-danger app-status">Error</span>
+			<span v-else-if="serviceState == 0" class="badge text-bg-warning app-status">Idle</span>
+			<span v-else-if="serviceState == 1" class="badge text-bg-success app-status">
+				<div class="spinner-grow text-light loading-small" role="status">
+					<span class="visually-hidden">Loading...</span>
+				</div>
+				Running
+			</span>
+			<span v-else-if="serviceState == 2" class="badge text-bg-danger app-status">Bad configuration</span>
+			<span v-else class="badge text-bg-primary app-status">
+				<div class="spinner-border spinner-border-sm text-light" role="status">
+					<span class="visually-hidden">Loading...</span>
+				</div>
+			</span>
+		</div>
+
+		<div v-if="user" class="credentials text-start">
+			<div v-if="user.firstName || user.lastName" class="property">
+				<div>{{ user.firstName }} {{ user.lastName }}</div>
+				<div class="text-secondary">Full name</div>
 			</div>
-			Running
-		</span>
-		<span v-else-if="serviceState == 2" class="badge text-bg-danger app-status">Bad configuration</span>
-		<span v-else class="badge text-bg-primary app-status">
-			<div class="spinner-border spinner-border-sm text-light" role="status">
-				<span class="visually-hidden">Loading...</span>
+			<div v-if="user.usernames.editableUsername" class="property">
+				<div>@{{ user.usernames.editableUsername }}</div>
+				<div class="text-secondary">Username</div>
 			</div>
-		</span>
+			<div class="property">
+				<div>{{ user.phoneNumber }}</div>
+				<div class="text-secondary">Phone</div>
+			</div>
+			<div class="property">
+				<div>{{ user.id }}</div>
+				<div class="text-secondary">User id</div>
+			</div>
+		</div>
+		<span v-else-if="serviceState == 1" class="badge text-bg-warning app-status">Sign in to your Telegram account</span>
+
+		<div class="d-grid gap-2 mt-2">
+
+			<a v-if="serviceState != 1" role="button" 
+				:class="isServerStateChangeRequestPending.state ? 'btn btn-primary disabled' : 'btn btn-primary'" 
+				@click="startService()" 
+				:aria-disabled="isServerStateChangeRequestPending.state">Start service</a>
+
+			<a v-else-if="serviceState == 1" role="button" 
+				:class="isServerStateChangeRequestPending.state ? 'btn btn-primary disabled' : 'btn btn-primary'" 
+				@click="stopService()" 
+				:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
+
+			<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()"
+				:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'">Sign out from Telegram</a>
+			<RouterLink v-else to="/signIn" 
+				:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'" >Sign in to Telegram</RouterLink>
+
+			<RouterLink to="/account" class="btn btn-primary">My account</RouterLink>
+			<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>
+			<a role="button" class="btn btn-primary btn-small" @click="signOut()">Sign out</a>
+		</div>
 	</div>
-
-	<div v-if="user" class="credentials text-start">
-		<div v-if="user.firstName || user.lastName" class="property">
-			<div>{{ user.firstName }} {{ user.lastName }}</div>
-			<div class="text-secondary">Full name</div>
-		</div>
-		<div v-if="user.usernames.editableUsername" class="property">
-			<div>@{{ user.usernames.editableUsername }}</div>
-			<div class="text-secondary">Username</div>
-		</div>
-		<div class="property">
-			<div>{{ user.phoneNumber }}</div>
-			<div class="text-secondary">Phone</div>
-		</div>
-		<div class="property">
-			<div>{{ user.id }}</div>
-			<div class="text-secondary">User id</div>
-		</div>
-	</div>
-	<span v-else-if="serviceState == 1" class="badge text-bg-warning app-status">Sign in to your Telegram account</span>
-
-	<div class="d-grid gap-2 mt-2">
-
-		<a v-if="serviceState != 1" role="button" 
-			:class="isServerStateChangeRequestPending.state ? 'btn btn-primary disabled' : 'btn btn-primary'" 
-			@click="startService()" 
-			:aria-disabled="isServerStateChangeRequestPending.state">Start service</a>
-
-		<a v-else-if="serviceState == 1" role="button" 
-			:class="isServerStateChangeRequestPending.state ? 'btn btn-primary disabled' : 'btn btn-primary'" 
-			@click="stopService()" 
-			:aria-disabled="isServerStateChangeRequestPending.state">Stop service</a>
-
-		<a v-if="isAuthorized" role="button" class="btn btn-primary btn-small" @click="logOutFromTgAccount()"
-			:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'">Sign out from Telegram</a>
-		<RouterLink v-else to="/signIn" 
-			:class="serviceState == 1 ? 'btn btn-primary' : 'btn btn-primary disabled'" >Sign in to Telegram</RouterLink>
-
-		<RouterLink to="/account" class="btn btn-primary">My account</RouterLink>
-		<RouterLink to="/settings" class="btn btn-primary">Settings</RouterLink>
-		<a role="button" class="btn btn-primary btn-small" @click="signOut()">Sign out</a>
-	</div>
+	<Statistics class="statistics-panel"></Statistics>
 </div>
 </template>
 
 <script>
+import Statistics from '../components/Statistics.vue';
 import { store } from '/src/store';
 import { withExecutionStateAsync } from '/src/utils';
 import { useToast } from "vue-toastification";
@@ -134,6 +138,9 @@ export default {
 		isAuthorized() {
 			return !!this.user;
 		}
+	},
+	components: {
+		Statistics
 	}
 }
 </script>
@@ -141,6 +148,7 @@ export default {
 <style scoped lang="scss">
 .main-panel {
 	position: relative;
+	margin: auto;
 }
 .app-status {
 }
@@ -154,5 +162,8 @@ export default {
 		line-height: 1;
 		margin-top: 7px;
 	}
+}
+.statistics-panel {
+	margin-top: 20px;
 }
 </style>

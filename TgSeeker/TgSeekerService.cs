@@ -10,6 +10,7 @@ using static TdLib.TdApi.Update;
 using Hangfire;
 using System.Diagnostics;
 using TgSeeker.Persistent.Entities.Interfaces;
+using TgSeeker.Statistics;
 
 namespace TgSeeker
 {
@@ -18,6 +19,7 @@ namespace TgSeeker
         #region Dependencies
         private readonly IMessagesRepository _messagesRepository;
         private readonly ISettingsRepository _settingsRepository;
+        private readonly IMetricsReporter _metricsReporter;
         private readonly ITgsServiceLogger? _logger;
         #endregion
 
@@ -36,10 +38,15 @@ namespace TgSeeker
         public AuthStates AuthorizationState { get; protected set; }
         public User? CurrentUser { get; protected set; }
 
-        public TgSeekerService(IMessagesRepository messagesRepository, ISettingsRepository settingsRepository, ITgsServiceLogger? logger = null)
+        public TgSeekerService(
+            IMessagesRepository messagesRepository, 
+            ISettingsRepository settingsRepository, 
+            IMetricsReporter statisticsReporter, 
+            ITgsServiceLogger? logger = null)
         {
             _messagesRepository = messagesRepository;
             _settingsRepository = settingsRepository;
+            _metricsReporter = statisticsReporter;
             _logger = logger;
         }
 
@@ -158,16 +165,28 @@ namespace TgSeeker
                 var message = messages.FirstOrDefault(m => m.Id == messageId);
                 if (message == null)
                 {
+                    // Abort handling if the message isn't cached
+                    _metricsReporter.IncrementByOne(Metrics.MessageCacheNotFound);
                     continue;
                 }
 
-                var handler = TgsMessageEvent.For(message, options, _messagesRepository, _client);
-                var pendingMessage = await handler.HandleMessageDeletedAsync(message);
-
-                // Message resources will be disposed after sending complete
-                if (message is IHasResource resourceMessage)
+                try
                 {
-                    _pendingMessages.Add(pendingMessage.Id, (message, pendingMessage));
+                    var handler = TgsMessageEvent.For(message, options, _messagesRepository, _client);
+                    var pendingMessage = await handler.HandleMessageDeletedAsync(message);
+
+                    // Message resources will be disposed after sending complete
+                    if (message is IHasResource resourceMessage)
+                    {
+                        _pendingMessages.Add(pendingMessage.Id, (message, pendingMessage));
+                    }
+
+                    _metricsReporter.IncrementByOne(Metrics.MessageDeletedEventHandleSuccess);
+                }
+                catch
+                {
+                    _metricsReporter.IncrementByOne(Metrics.MessageDeletedEventHandleFailure);
+                    throw;
                 }
             }
         }
